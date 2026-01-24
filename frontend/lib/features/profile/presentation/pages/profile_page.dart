@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/services/database_service.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -15,20 +14,10 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final DatabaseService _databaseService = DatabaseService.instance;
+  final ApiService _apiService = ApiService.instance;
 
   @override
   Widget build(BuildContext context) {
-    final user = _databaseService.currentUser;
-    
-    if (user == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -44,15 +33,18 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: AmoraTheme.glassmorphism(
-                          color: Colors.white,
-                          borderRadius: 16,
-                        ),
-                        child: const Icon(
-                          Icons.settings,
-                          color: AmoraTheme.deepMidnight,
+                      GestureDetector(
+                        onTap: () => context.go('/settings'),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: AmoraTheme.glassmorphism(
+                            color: Colors.white,
+                            borderRadius: 16,
+                          ),
+                          child: const Icon(
+                            Icons.settings,
+                            color: AmoraTheme.deepMidnight,
+                          ),
                         ),
                       ),
                       
@@ -102,59 +94,41 @@ class _ProfilePageState extends State<ProfilePage> {
                                 Container(
                                   width: 120,
                                   height: 120,
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     shape: BoxShape.circle,
                                     gradient: AmoraTheme.primaryGradient,
                                   ),
-                                  child: user.primaryPhoto.isNotEmpty
-                                      ? ClipOval(
-                                          child: CachedNetworkImage(
-                                            imageUrl: user.primaryPhoto,
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) => const Center(
-                                              child: CircularProgressIndicator(
-                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                              ),
-                                            ),
-                                            errorWidget: (context, url, error) => const Icon(
-                                              Icons.person,
-                                              size: 60,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.person,
-                                          size: 60,
-                                          color: Colors.white,
-                                        ),
+                                  child: const Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                                if (user.isVerified)
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: const BoxDecoration(
-                                        color: AmoraTheme.warmGold,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.verified,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: AmoraTheme.warmGold,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.verified,
+                                      color: Colors.white,
+                                      size: 20,
                                     ),
                                   ),
+                                ),
                               ],
                             ).animate()
                               .scale(duration: 800.ms, curve: Curves.elasticOut),
                             
                             const SizedBox(height: 16),
                             
-                            Text(
-                              '${user.name}, ${user.age}',
-                              style: const TextStyle(
+                            const Text(
+                              'Your Name, 25',
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: AmoraTheme.deepMidnight,
@@ -162,17 +136,15 @@ class _ProfilePageState extends State<ProfilePage> {
                             ).animate()
                               .fadeIn(delay: 200.ms, duration: 800.ms),
                             
-                            if (user.job != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                user.job!,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: AmoraTheme.deepMidnight.withOpacity(0.7),
-                                ),
-                              ).animate()
-                                .fadeIn(delay: 400.ms, duration: 800.ms),
-                            ],
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Software Developer',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AmoraTheme.deepMidnight,
+                              ),
+                            ).animate()
+                              .fadeIn(delay: 400.ms, duration: 800.ms),
                             
                             const SizedBox(height: 16),
                             
@@ -180,9 +152,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                _buildStatItem('Photos', user.photoCount.toString()),
-                                _buildStatItem('Matches', '12'), // Mock data
-                                _buildStatItem('Likes', '48'), // Mock data
+                                _buildStatItem('Photos', '6'),
+                                _buildStatItem('Matches', '12'),
+                                _buildStatItem('Likes', '48'),
                               ],
                             ).animate()
                               .fadeIn(delay: 600.ms, duration: 800.ms),
@@ -191,98 +163,94 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       
                       // Bio section
-                      if (user.bio.isNotEmpty) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: AmoraTheme.offWhite,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'About Me',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: AmoraTheme.deepMidnight,
-                                ),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AmoraTheme.offWhite,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        child: const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'About Me',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AmoraTheme.deepMidnight,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                user.bio,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: AmoraTheme.deepMidnight.withOpacity(0.8),
-                                  height: 1.5,
-                                ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Love traveling, good food, and meaningful conversations. Looking for someone to share adventures with!',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AmoraTheme.deepMidnight,
+                                height: 1.5,
                               ),
-                            ],
-                          ),
-                        ).animate()
-                          .fadeIn(delay: 800.ms, duration: 800.ms)
-                          .slideY(begin: 0.3, end: 0),
-                        
-                        const SizedBox(height: 16),
-                      ],
+                            ),
+                          ],
+                        ),
+                      ).animate()
+                        .fadeIn(delay: 800.ms, duration: 800.ms)
+                        .slideY(begin: 0.3, end: 0),
+                      
+                      const SizedBox(height: 16),
                       
                       // Interests
-                      if (user.interests.isNotEmpty) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'My Interests',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: AmoraTheme.deepMidnight,
-                                ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'My Interests',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AmoraTheme.deepMidnight,
                               ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: user.interests.map((interest) {
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      gradient: AmoraTheme.primaryGradient,
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AmoraTheme.sunsetRose.withOpacity(0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Text(
-                                      interest,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white,
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: ['Travel', 'Music', 'Photography', 'Cooking', 'Fitness'].map((interest) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: AmoraTheme.primaryGradient,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AmoraTheme.sunsetRose.withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
                                       ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    interest,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
                                     ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
-                        ).animate()
-                          .fadeIn(delay: 1000.ms, duration: 800.ms),
-                        
-                        const SizedBox(height: 24),
-                      ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ).animate()
+                        .fadeIn(delay: 1000.ms, duration: 800.ms),
+                      
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -298,9 +266,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.photo_library,
                         title: 'Manage Photos',
                         subtitle: 'Add or remove photos',
-                        onTap: () {
-                          // Navigate to photo management
-                        },
+                        onTap: () => context.go('/edit-profile'),
                       ).animate()
                         .fadeIn(delay: 1200.ms, duration: 600.ms)
                         .slideX(begin: -0.3, end: 0),
@@ -311,24 +277,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.location_on,
                         title: 'Discovery Settings',
                         subtitle: 'Distance, age range, and more',
-                        onTap: () {
-                          // Navigate to discovery settings
-                        },
+                        onTap: () => context.go('/settings'),
                       ).animate()
                         .fadeIn(delay: 1400.ms, duration: 600.ms)
-                        .slideX(begin: -0.3, end: 0),
-                      
-                      const SizedBox(height: 12),
-                      
-                      _buildActionButton(
-                        icon: Icons.security,
-                        title: 'Privacy & Safety',
-                        subtitle: 'Control your privacy settings',
-                        onTap: () {
-                          // Navigate to privacy settings
-                        },
-                      ).animate()
-                        .fadeIn(delay: 1600.ms, duration: 600.ms)
                         .slideX(begin: -0.3, end: 0),
                       
                       const SizedBox(height: 12),
@@ -342,7 +293,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         },
                         isDestructive: true,
                       ).animate()
-                        .fadeIn(delay: 1800.ms, duration: 600.ms)
+                        .fadeIn(delay: 1600.ms, duration: 600.ms)
                         .slideX(begin: -0.3, end: 0),
                     ],
                   ),

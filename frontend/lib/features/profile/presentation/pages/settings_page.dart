@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/services/database_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -12,8 +11,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final DatabaseService _databaseService = DatabaseService.instance;
-  
   // Settings values
   bool _pushNotifications = true;
   bool _emailNotifications = false;
@@ -525,7 +522,6 @@ class _SettingsPageState extends State<SettingsPage> {
             child: TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // Implement account deletion
                 _deleteAccount();
               },
               child: const Text(
@@ -543,7 +539,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _deleteAccount() {
-    // Implement account deletion logic
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Account deletion requested. You will receive a confirmation email.'),

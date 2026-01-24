@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/services/database_service.dart';
-import '../../../../core/services/telegram_service.dart';
+import '../../../../core/services/api_service.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -14,8 +13,7 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  final DatabaseService _databaseService = DatabaseService.instance;
-  final TelegramService _telegramService = TelegramService.instance;
+  final ApiService _apiService = ApiService.instance;
   
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -41,15 +39,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   void _loadUserData() {
-    final user = _databaseService.currentUser;
-    if (user != null) {
-      _nameController.text = user.name;
-      _bioController.text = user.bio;
-      _jobController.text = user.job ?? '';
-      _educationController.text = user.education ?? '';
-      _photos = List.from(user.photos);
-      _selectedInterests = List.from(user.interests);
-    }
+    // Load current user data
+    _nameController.text = 'Your Name';
+    _bioController.text = 'Tell us about yourself...';
+    _jobController.text = 'Software Developer';
+    _educationController.text = 'University Graduate';
+    _selectedInterests = ['Travel', 'Music', 'Photography'];
   }
 
   @override
@@ -77,9 +72,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
 
     try {
-      final imageFile = await _telegramService.pickImage();
-      if (imageFile != null) {
-        final imageUrl = await _telegramService.uploadImage(imageFile);
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1080,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        final imageUrl = await _apiService.uploadImage(image.path);
         setState(() {
           _photos.add(imageUrl);
         });
@@ -114,41 +116,28 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
     
-    if (_photos.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please add at least one photo'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final user = _databaseService.currentUser;
-      if (user != null) {
-        await _databaseService.updateProfile(user.id, {
-          'name': _nameController.text.trim(),
-          'bio': _bioController.text.trim(),
-          'job': _jobController.text.trim(),
-          'education': _educationController.text.trim(),
-          'photos': _photos,
-          'interests': _selectedInterests,
-        });
+      await _apiService.updateProfile({
+        'name': _nameController.text.trim(),
+        'bio': _bioController.text.trim(),
+        'job': _jobController.text.trim(),
+        'education': _educationController.text.trim(),
+        'photos': _photos,
+        'interests': _selectedInterests,
+      });
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile updated successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          context.go('/profile');
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.go('/profile');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -247,7 +236,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         
                         const SizedBox(height: 12),
                         
-                        Container(
+                        SizedBox(
                           height: 120,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
@@ -302,32 +291,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: AmoraTheme.softShadow,
+                                  color: Colors.grey[300],
                                 ),
                                 child: Stack(
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(16),
-                                      child: CachedNetworkImage(
-                                        imageUrl: _photos[index],
+                                      child: Container(
                                         width: 100,
                                         height: 120,
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) => Container(
-                                          color: AmoraTheme.offWhite,
-                                          child: const Center(
-                                            child: CircularProgressIndicator(
-                                              valueColor: AlwaysStoppedAnimation<Color>(
-                                                AmoraTheme.sunsetRose,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        errorWidget: (context, url, error) => Container(
-                                          color: AmoraTheme.offWhite,
-                                          child: const Icon(
-                                            Icons.error,
-                                            color: Colors.red,
-                                          ),
+                                        color: Colors.grey[300],
+                                        child: const Icon(
+                                          Icons.image,
+                                          size: 40,
+                                          color: Colors.grey,
                                         ),
                                       ),
                                     ),

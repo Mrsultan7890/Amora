@@ -298,7 +298,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     children: [
                       // Pass button
                       GestureDetector(
-                        onTap: () => _cardController.swipe(CardSwiperDirection.left),
+                        onTap: () => _cardController.swipeLeft(),
                         child: Container(
                           width: 56,
                           height: 56,
@@ -338,7 +338,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                       
                       // Like button
                       GestureDetector(
-                        onTap: () => _cardController.swipe(CardSwiperDirection.right),
+                        onTap: () => _cardController.swipeRight(),
                         child: Container(
                           width: 56,
                           height: 56,
