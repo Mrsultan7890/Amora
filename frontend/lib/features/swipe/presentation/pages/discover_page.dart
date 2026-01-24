@@ -3,7 +3,7 @@ import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/services/database_service.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../shared/models/user_model.dart';
 
 class DiscoverPage extends StatefulWidget {
@@ -15,7 +15,7 @@ class DiscoverPage extends StatefulWidget {
 
 class _DiscoverPageState extends State<DiscoverPage> {
   final CardSwiperController _cardController = CardSwiperController();
-  final DatabaseService _databaseService = DatabaseService.instance;
+  final ApiService _apiService = ApiService.instance;
   
   List<UserModel> _profiles = [];
   bool _isLoading = true;
@@ -32,18 +32,11 @@ class _DiscoverPageState extends State<DiscoverPage> {
     });
 
     try {
-      final currentUser = _databaseService.currentUser;
-      if (currentUser != null) {
-        final profiles = await _databaseService.getDiscoverProfiles(
-          currentUserId: currentUser.id,
-          limit: 20,
-        );
-        
-        setState(() {
-          _profiles = profiles;
-          _isLoading = false;
-        });
-      }
+      final profiles = await _apiService.getDiscoverProfiles(limit: 20);
+      setState(() {
+        _profiles = profiles;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -51,35 +44,27 @@ class _DiscoverPageState extends State<DiscoverPage> {
     }
   }
 
-  Future<void> _handleSwipe(int index, CardSwiperDirection direction) async {
-    if (index >= _profiles.length) return;
+  Future<bool> _handleSwipe(int previousIndex, int? currentIndex, CardSwiperDirection direction) async {
+    if (previousIndex >= _profiles.length) return false;
     
-    final currentUser = _databaseService.currentUser;
-    if (currentUser == null) return;
-    
-    final swipedUser = _profiles[index];
+    final swipedUser = _profiles[previousIndex];
     final isLike = direction == CardSwiperDirection.right;
     
     try {
-      await _databaseService.createSwipe(
-        swiperId: currentUser.id,
-        swipedId: swipedUser.id,
+      final result = await _apiService.createSwipe(
+        swipedUserId: swipedUser.id,
         isLike: isLike,
       );
       
       // Check for match
-      if (isLike) {
-        final isMatch = await _databaseService.checkMatch(
-          userId1: currentUser.id,
-          userId2: swipedUser.id,
-        );
-        
-        if (isMatch && mounted) {
-          _showMatchDialog(swipedUser);
-        }
+      if (isLike && result['is_match'] == true && mounted) {
+        _showMatchDialog(swipedUser);
       }
+      
+      return true;
     } catch (e) {
       print('Error handling swipe: $e');
+      return false;
     }
   }
 
@@ -115,10 +100,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 children: [
                   CircleAvatar(
                     radius: 40,
-                    backgroundImage: _databaseService.currentUser?.primaryPhoto.isNotEmpty == true
-                        ? CachedNetworkImageProvider(_databaseService.currentUser!.primaryPhoto)
+                    backgroundImage: matchedUser.primaryPhoto.isNotEmpty
+                        ? CachedNetworkImageProvider(matchedUser.primaryPhoto)
                         : null,
-                    child: _databaseService.currentUser?.primaryPhoto.isEmpty == true
+                    child: matchedUser.primaryPhoto.isEmpty
                         ? const Icon(Icons.person, size: 40)
                         : null,
                   ),
@@ -395,7 +380,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
             Container(
               width: double.infinity,
               height: double.infinity,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AmoraTheme.primaryGradient,
               ),
               child: user.primaryPhoto.isNotEmpty

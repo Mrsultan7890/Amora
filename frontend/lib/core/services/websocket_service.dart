@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../models/message_model.dart';
+import '../../shared/models/message_model.dart';
 
 class WebSocketService {
   static WebSocketService? _instance;
@@ -121,7 +121,6 @@ class WebSocketService {
   }
   
   void _handleConnectionError() {
-    // Attempt to reconnect after a delay
     if (_currentUserId != null) {
       Timer(const Duration(seconds: 5), () {
         connect(_currentUserId!);
@@ -130,7 +129,6 @@ class WebSocketService {
   }
   
   void _handleConnectionClosed() {
-    // Connection closed, clean up
     _messageController?.close();
     _messageController = null;
   }

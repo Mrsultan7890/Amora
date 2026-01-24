@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../models/user_model.dart';
-import '../models/match_model.dart';
-import '../models/message_model.dart';
+import '../../shared/models/user_model.dart';
+import '../../shared/models/match_model.dart';
+import '../../shared/models/message_model.dart';
 
 class ApiService {
   static ApiService? _instance;
@@ -36,14 +36,12 @@ class ApiService {
       },
       onError: (error, handler) {
         if (error.response?.statusCode == 401) {
-          // Token expired, logout user
           _clearToken();
         }
         handler.next(error);
       },
     ));
     
-    // Load saved token
     await _loadToken();
   }
   
