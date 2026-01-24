@@ -14,7 +14,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final ApiService _apiService = ApiService.instance;
 
   @override
   Widget build(BuildContext context) {
