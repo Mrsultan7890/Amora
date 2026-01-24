@@ -1,0 +1,11 @@
+sdk.dir=/Users/username/Library/Android/sdk
+flutter.sdk=/Users/username/flutter
+flutter.buildMode=debug
+flutter.versionName=1.0.0
+flutter.versionCode=1
+
+# Signing (for release builds)
+# storeFile=../keystore/amora-release-key.jks
+# storePassword=your_store_password
+# keyAlias=amora-key-alias
+# keyPassword=your_key_password

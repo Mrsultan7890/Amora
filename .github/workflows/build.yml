@@ -1,4 +1,4 @@
-name: Build Amora App
+name: Build Amora Android App
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Setup Java
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '17'
@@ -29,10 +29,6 @@ jobs:
     - name: Get dependencies
       working-directory: ./frontend
       run: flutter pub get
-      
-    - name: Generate code
-      working-directory: ./frontend
-      run: flutter packages pub run build_runner build --delete-conflicting-outputs
       
     - name: Analyze code
       working-directory: ./frontend
@@ -51,51 +47,13 @@ jobs:
       run: flutter build appbundle --release
       
     - name: Upload APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: amora-apk
         path: frontend/build/app/outputs/flutter-apk/app-release.apk
         
     - name: Upload App Bundle
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: amora-aab
         path: frontend/build/app/outputs/bundle/release/app-release.aab
-
-  build-ios:
-    runs-on: macos-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.16.0'
-        channel: 'stable'
-        
-    - name: Get dependencies
-      working-directory: ./frontend
-      run: flutter pub get
-      
-    - name: Generate code
-      working-directory: ./frontend
-      run: flutter packages pub run build_runner build --delete-conflicting-outputs
-      
-    - name: Build iOS (no codesign)
-      working-directory: ./frontend
-      run: flutter build ios --release --no-codesign
-      
-    - name: Create IPA
-      working-directory: ./frontend
-      run: |
-        mkdir -p build/ios/ipa
-        cd build/ios/iphoneos
-        zip -r ../ipa/amora.ipa Runner.app
-        
-    - name: Upload IPA
-      uses: actions/upload-artifact@v3
-      with:
-        name: amora-ipa
-        path: frontend/build/ios/ipa/amora.ipa
