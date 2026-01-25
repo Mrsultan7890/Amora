@@ -63,9 +63,3 @@ flutter:
     - assets/icons/
     - .env
   
-  fonts:
-    - family: Amora
-      fonts:
-        - asset: assets/fonts/Amora-Regular.ttf
-        - asset: assets/fonts/Amora-Bold.ttf
-          weight: 700
