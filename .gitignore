@@ -1,0 +1,21 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Backend environment
+backend/.env
+backend/.env.local
+backend/.env.production
+
+# Frontend environment  
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# Sensitive files
+*.key
+*.pem
+keystore/
+secrets/
