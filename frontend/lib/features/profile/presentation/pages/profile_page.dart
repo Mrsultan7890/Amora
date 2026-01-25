@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../shared/models/user_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -13,9 +15,51 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final ApiService _apiService = ApiService.instance;
+  UserModel? _currentUser;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = await _apiService.getCurrentUser();
+      setState(() {
+        _currentUser = user;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error loading user data: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AmoraTheme.sunsetRose),
+          ),
+        ),
+      );
+    }
+
+    if (_currentUser == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Failed to load profile'),
+        ),
+      );
+    }
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -124,9 +168,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             
                             const SizedBox(height: 16),
                             
-                            const Text(
-                              'Your Name, 25',
-                              style: TextStyle(
+                            Text(
+                              '${_currentUser!.name}, ${_currentUser!.age}',
+                              style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: AmoraTheme.deepMidnight,
@@ -135,9 +179,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               .fadeIn(delay: 200.ms, duration: 800.ms),
                             
                             const SizedBox(height: 4),
-                            const Text(
-                              'Software Developer',
-                              style: TextStyle(
+                            Text(
+                              _currentUser!.job ?? 'No job specified',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 color: AmoraTheme.deepMidnight,
                               ),
@@ -182,8 +226,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Love traveling, good food, and meaningful conversations. Looking for someone to share adventures with!',
-                              style: TextStyle(
+                              _currentUser!.bio.isEmpty ? 'No bio added yet' : _currentUser!.bio,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 color: AmoraTheme.deepMidnight,
                                 height: 1.5,
@@ -215,7 +259,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: ['Travel', 'Music', 'Photography', 'Cooking', 'Fitness'].map((interest) {
+                              children: _currentUser!.interests.isEmpty 
+                                  ? [const Text('No interests added yet', style: TextStyle(color: AmoraTheme.deepMidnight))]
+                                  : _currentUser!.interests.map((interest) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -264,7 +310,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.photo_library,
                         title: 'Manage Photos',
                         subtitle: 'Add or remove photos',
-                        onTap: () => context.go('/edit-profile'),
+                        onTap: () async {
+                          await context.push('/edit-profile');
+                          _loadUserData(); // Refresh data when returning
+                        },
                       ).animate()
                         .fadeIn(delay: 1200.ms, duration: 600.ms)
                         .slideX(begin: -0.3, end: 0),

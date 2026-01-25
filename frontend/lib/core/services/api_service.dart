@@ -48,18 +48,21 @@ class ApiService {
   Future<void> _loadToken() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('auth_token');
+    print('Loaded token: ${_token != null ? "Found" : "Not found"}');
   }
   
   Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
     _token = token;
+    print('Token saved successfully');
   }
   
   Future<void> _clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     _token = null;
+    print('Token cleared');
   }
   
   // Auth Methods
@@ -145,12 +148,12 @@ class ApiService {
     int limit = 10,
   }) async {
     try {
-      final response = await _dio.get('/users/discover', queryParameters: {
+      final response = await _dio.get('/swipes/discover', queryParameters: {
         'page': page,
         'limit': limit,
       });
       
-      return (response.data['users'] as List)
+      return (response.data as List)
           .map((json) => UserModel.fromJson(json))
           .toList();
     } catch (e) {

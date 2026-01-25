@@ -18,6 +18,8 @@ import 'features/profile/presentation/pages/edit_profile_page.dart';
 import 'features/profile/presentation/pages/settings_page.dart';
 import 'shared/widgets/main_navigation.dart';
 
+import 'core/services/location_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -26,6 +28,7 @@ void main() async {
   
   // Initialize services
   await ApiService.instance.initialize();
+  await LocationService.instance.initializeLocation();
   
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
@@ -51,13 +54,25 @@ class AmoraApp extends StatelessWidget {
           create: (context) => AuthBloc()..add(AuthCheckRequested()),
         ),
       ],
-      child: MaterialApp.router(
-        title: 'Amora',
-        debugShowCheckedModeBanner: false,
-        theme: AmoraTheme.lightTheme,
-        darkTheme: AmoraTheme.darkTheme,
-        themeMode: ThemeMode.light,
-        routerConfig: _router,
+      child: WillPopScope(
+        onWillPop: () async {
+          // Prevent app from closing on back gesture
+          final currentRoute = GoRouterState.of(context).location;
+          if (currentRoute == '/discover' || currentRoute == '/matches' || currentRoute == '/profile') {
+            // On main tabs, don't close app, just stay on current tab
+            return false;
+          }
+          // On other pages, allow normal back navigation
+          return true;
+        },
+        child: MaterialApp.router(
+          title: 'Amora',
+          debugShowCheckedModeBanner: false,
+          theme: AmoraTheme.lightTheme,
+          darkTheme: AmoraTheme.darkTheme,
+          themeMode: ThemeMode.light,
+          routerConfig: _router,
+        ),
       ),
     );
   }

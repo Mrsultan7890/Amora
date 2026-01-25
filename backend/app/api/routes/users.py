@@ -14,6 +14,8 @@ class ProfileUpdateRequest(BaseModel):
     education: Optional[str] = None
     photos: Optional[List[str]] = None
     interests: Optional[List[str]] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 @router.get("/profile")
 async def get_profile(current_user: User = Depends(get_current_user)):
@@ -37,6 +39,10 @@ async def update_profile(
     if profile_data.photos is not None:
         import json
         current_user.photos = json.dumps(profile_data.photos)
+    if profile_data.latitude is not None:
+        current_user.latitude = profile_data.latitude
+    if profile_data.longitude is not None:
+        current_user.longitude = profile_data.longitude
     
     db.commit()
     db.refresh(current_user)

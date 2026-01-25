@@ -38,13 +38,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _loadUserData();
   }
 
-  void _loadUserData() {
-    // Load current user data
-    _nameController.text = 'Your Name';
-    _bioController.text = 'Tell us about yourself...';
-    _jobController.text = 'Software Developer';
-    _educationController.text = 'University Graduate';
-    _selectedInterests = ['Travel', 'Music', 'Photography'];
+  void _loadUserData() async {
+    try {
+      final user = await _apiService.getCurrentUser();
+      _nameController.text = user.name;
+      _bioController.text = user.bio;
+      _jobController.text = user.job ?? '';
+      _educationController.text = user.education ?? '';
+      _selectedInterests = List.from(user.interests);
+      _photos = List.from(user.photos);
+      setState(() {});
+    } catch (e) {
+      // Use empty defaults if API fails
+      _nameController.text = '';
+      _bioController.text = '';
+      _jobController.text = '';
+      _educationController.text = '';
+      _selectedInterests = [];
+      _photos = [];
+    }
   }
 
   @override

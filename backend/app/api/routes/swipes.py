@@ -69,4 +69,5 @@ async def discover_users(
         ~User.id.in_(swiped_user_ids)
     ).limit(10).all()
     
-    return [{"id": u.id, "name": u.name, "age": u.age, "bio": u.bio, "photos": u.photos} for u in users]
+    from app.api.routes.auth import UserResponse
+    return [UserResponse.model_validate(u) for u in users]
