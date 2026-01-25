@@ -48,9 +48,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _selectedInterests = List.from(user.interests);
       _photos = List.from(user.photos);
       setState(() {});
+      print('User data loaded: ${user.photos.length} photos');
     } catch (e) {
       print('Error loading user data: $e');
-      // Use empty defaults if API fails
       _nameController.text = 'User';
       _bioController.text = 'Tell us about yourself';
       _jobController.text = '';

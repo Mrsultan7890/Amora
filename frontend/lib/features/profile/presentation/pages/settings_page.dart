@@ -40,21 +40,25 @@ class _SettingsPageState extends State<SettingsPage> {
       final settings = await _settingsService.loadAllSettings();
       final ageRange = settings['age_range'] as List<double>;
       
-      setState(() {
-        _maxDistance = settings['max_distance'];
-        _ageRange = RangeValues(ageRange[0], ageRange[1]);
-        _interestedIn = settings['interested_in'];
-        _pushNotifications = settings['push_notifications'];
-        _emailNotifications = settings['email_notifications'];
-        _showOnlineStatus = settings['show_online_status'];
-        _showDistance = settings['show_distance'];
-        _showMeOnAmora = settings['show_me_on_amora'];
-        _incognitoMode = settings['incognito_mode'];
-      });
+      if (mounted) {
+        setState(() {
+          _maxDistance = settings['max_distance'];
+          _ageRange = RangeValues(ageRange[0], ageRange[1]);
+          _interestedIn = settings['interested_in'];
+          _pushNotifications = settings['push_notifications'];
+          _emailNotifications = settings['email_notifications'];
+          _showOnlineStatus = settings['show_online_status'];
+          _showDistance = settings['show_distance'];
+          _showMeOnAmora = settings['show_me_on_amora'];
+          _incognitoMode = settings['incognito_mode'];
+        });
+      }
     } catch (e) {
       print('Error loading settings: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -124,8 +128,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           1.0,
                           100.0,
                           (value) async {
-                            setState(() => _maxDistance = value);
-                            await _settingsService.setMaxDistance(value);
+                            if (mounted) {
+                              setState(() => _maxDistance = value);
+                              await _settingsService.setMaxDistance(value);
+                            }
                           },
                         ),
                         
@@ -138,8 +144,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           18.0,
                           80.0,
                           (values) async {
-                            setState(() => _ageRange = values);
-                            await _settingsService.setAgeRange(values.start, values.end);
+                            if (mounted) {
+                              setState(() => _ageRange = values);
+                              await _settingsService.setAgeRange(values.start, values.end);
+                            }
                           },
                         ),
                         

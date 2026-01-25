@@ -32,6 +32,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _currentUser = user;
         _isLoading = false;
       });
+      print('Profile loaded: ${user.photos.length} photos');
     } catch (e) {
       setState(() {
         _isLoading = false;
