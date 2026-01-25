@@ -54,16 +54,11 @@ class AmoraApp extends StatelessWidget {
           create: (context) => AuthBloc()..add(AuthCheckRequested()),
         ),
       ],
-      child: WillPopScope(
-        onWillPop: () async {
-          // Prevent app from closing on back gesture
-          final currentRoute = GoRouterState.of(context).location;
-          if (currentRoute == '/discover' || currentRoute == '/matches' || currentRoute == '/profile') {
-            // On main tabs, don't close app, just stay on current tab
-            return false;
-          }
-          // On other pages, allow normal back navigation
-          return true;
+      child: PopScope(
+        canPop: false,
+        onPopInvoked: (didPop) {
+          // Prevent app from closing on back gesture in main tabs
+          // This will be handled by the navigation system
         },
         child: MaterialApp.router(
           title: 'Amora',

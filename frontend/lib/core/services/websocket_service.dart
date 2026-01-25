@@ -33,7 +33,7 @@ class WebSocketService {
         },
       );
       
-      print('WebSocket connected for user: $userId');
+      print('WebSocket connected for user: $_userId');
     } catch (e) {
       print('Failed to connect WebSocket: $e');
     }
