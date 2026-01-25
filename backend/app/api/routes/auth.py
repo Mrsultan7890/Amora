@@ -31,10 +31,10 @@ class UserResponse(BaseModel):
     name: str
     age: int
     gender: str
-    bio: str
+    bio: str = ""
     job: Optional[str] = None
     education: Optional[str] = None
-    photos: list[str] = []
+    photos: str = "[]"
     is_verified: bool
     is_online: bool
     created_at: datetime
@@ -86,40 +86,54 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 # Routes
 @router.post("/register", response_model=Token)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    # Check if user exists
-    db_user = db.query(User).filter(User.email == user_data.email).first()
-    if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+    try:
+        print(f"Registration attempt for: {user_data.email}")
+        
+        # Check if user exists
+        db_user = db.query(User).filter(User.email == user_data.email).first()
+        if db_user:
+            print(f"User already exists: {user_data.email}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Create new user
+        hashed_password = get_password_hash(user_data.password)
+        print(f"Creating user with hashed password")
+        
+        db_user = User(
+            email=user_data.email,
+            hashed_password=hashed_password,
+            name=user_data.name,
+            age=user_data.age,
+            gender=user_data.gender,
+            is_online=True
         )
-    
-    # Create new user
-    hashed_password = get_password_hash(user_data.password)
-    db_user = User(
-        email=user_data.email,
-        hashed_password=hashed_password,
-        name=user_data.name,
-        age=user_data.age,
-        gender=user_data.gender,
-        is_online=True
-    )
-    
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    
-    # Create access token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": str(db_user.id)}, expires_delta=access_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": UserResponse.from_orm(db_user)
-    }
+        
+        print(f"Adding user to database")
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        print(f"User created successfully: {db_user.id}")
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": str(db_user.id)}, expires_delta=access_token_expires
+        )
+        
+        print(f"Token created, returning response")
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserResponse.model_validate(db_user)
+        }
+    except Exception as e:
+        print(f"Registration error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -142,7 +156,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": UserResponse.from_orm(user)
+        "user": UserResponse.model_validate(user)
     }
 
 @router.post("/logout")
