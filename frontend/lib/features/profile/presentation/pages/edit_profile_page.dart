@@ -100,6 +100,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           _photos.add(imageUrl);
         });
         
+        print('Photo uploaded successfully: $imageUrl');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Photo uploaded successfully!'),

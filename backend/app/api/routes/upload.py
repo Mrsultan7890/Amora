@@ -43,14 +43,24 @@ async def upload_image(file: UploadFile = File(...)):
                     )
                     
                     print(f"Telegram response: {response.status_code}")
-                    if response.status_code == 200:
-                        result = response.json()
-                        print(f"Telegram result: {result}")
-                        if result.get('ok'):
-                            # Get file_id from Telegram response
-                            file_id = result['result']['photo'][-1]['file_id']
-                            # Return Telegram file URL
-                            return {"url": f"https://api.telegram.org/file/bot{settings.TELEGRAM_BOT_TOKEN}/{file_id}"}
+                        if response.status_code == 200:
+                            result = response.json()
+                            print(f"Telegram result: {result}")
+                            if result.get('ok'):
+                                # Get file_id from Telegram response
+                                file_id = result['result']['photo'][-1]['file_id']
+                                # Get file info to get proper URL
+                                file_info_response = await client.get(
+                                    f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/getFile",
+                                    params={'file_id': file_id}
+                                )
+                                if file_info_response.status_code == 200:
+                                    file_info = file_info_response.json()
+                                    if file_info.get('ok'):
+                                        file_path = file_info['result']['file_path']
+                                        telegram_url = f"https://api.telegram.org/file/bot{settings.TELEGRAM_BOT_TOKEN}/{file_path}"
+                                        print(f"Returning Telegram URL: {telegram_url}")
+                                        return {"url": telegram_url}
                     else:
                         print(f"Telegram error: {response.text}")
             except Exception as telegram_error:
