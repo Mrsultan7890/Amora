@@ -64,10 +64,11 @@ android {
 
     buildTypes {
         release {
-            // signingConfig signingConfigs.release
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Use debug signing for now
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             
             // Build config fields
             buildConfigField "String", "API_BASE_URL", "\"https://api.amora.app\""
