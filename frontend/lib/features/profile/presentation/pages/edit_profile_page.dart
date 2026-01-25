@@ -300,28 +300,61 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               }
                               
                               // Photo item
+                              final photoUrl = _photos[index];
                               return Container(
                                 width: 100,
                                 margin: const EdgeInsets.only(right: 12),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: AmoraTheme.softShadow,
-                                  color: Colors.grey[300],
                                 ),
                                 child: Stack(
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(16),
-                                      child: Container(
-                                        width: 100,
-                                        height: 120,
-                                        color: Colors.grey[300],
-                                        child: const Icon(
-                                          Icons.image,
-                                          size: 40,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
+                                      child: photoUrl.isNotEmpty
+                                          ? Image.network(
+                                              photoUrl,
+                                              width: 100,
+                                              height: 120,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                print('Image load error: $error');
+                                                return Container(
+                                                  width: 100,
+                                                  height: 120,
+                                                  color: Colors.grey[300],
+                                                  child: const Icon(
+                                                    Icons.broken_image,
+                                                    size: 40,
+                                                    color: Colors.grey,
+                                                  ),
+                                                );
+                                              },
+                                              loadingBuilder: (context, child, loadingProgress) {
+                                                if (loadingProgress == null) return child;
+                                                return Container(
+                                                  width: 100,
+                                                  height: 120,
+                                                  color: Colors.grey[200],
+                                                  child: const Center(
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            )
+                                          : Container(
+                                              width: 100,
+                                              height: 120,
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                Icons.image,
+                                                size: 40,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
                                     ),
                                     
                                     // Remove button

@@ -141,11 +141,27 @@ class _ProfilePageState extends State<ProfilePage> {
                                     shape: BoxShape.circle,
                                     gradient: AmoraTheme.primaryGradient,
                                   ),
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 60,
-                                    color: Colors.white,
-                                  ),
+                                  child: _currentUser!.photos.isNotEmpty
+                                      ? ClipOval(
+                                          child: Image.network(
+                                            _currentUser!.photos.first,
+                                            width: 120,
+                                            height: 120,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return const Icon(
+                                                Icons.person,
+                                                size: 60,
+                                                color: Colors.white,
+                                              );
+                                            },
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.person,
+                                          size: 60,
+                                          color: Colors.white,
+                                        ),
                                 ),
                                 Positioned(
                                   bottom: 0,
@@ -195,7 +211,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                _buildStatItem('Photos', '6'),
+                                _buildStatItem('Photos', '${_currentUser!.photos.length}'),
                                 _buildStatItem('Matches', '12'),
                                 _buildStatItem('Likes', '48'),
                               ],
