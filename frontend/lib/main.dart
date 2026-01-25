@@ -15,8 +15,6 @@ import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/profile/presentation/pages/edit_profile_page.dart';
 import 'features/profile/presentation/pages/settings_page.dart';
 import 'shared/widgets/main_navigation.dart';
-import 'core/services/location_service.dart';
-import 'core/constants/app_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,7 +64,7 @@ class AmoraApp extends StatelessWidget {
           routerConfig: _router,
           builder: (context, child) {
             return MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(1.0)),
               child: child ?? const Scaffold(
                 body: Center(
                   child: Text('App failed to load'),
