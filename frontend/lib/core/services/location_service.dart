@@ -83,6 +83,13 @@ class LocationService {
   }
   
   Future<void> initializeLocation() async {
-    await getCurrentLocation();
+    // Don't block app startup - initialize in background
+    Future.delayed(const Duration(seconds: 1), () async {
+      try {
+        await getCurrentLocation();
+      } catch (e) {
+        print('Background location initialization failed: $e');
+      }
+    });
   }
 }

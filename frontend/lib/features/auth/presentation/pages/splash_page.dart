@@ -22,7 +22,7 @@ class _SplashPageState extends State<SplashPage> {
 
   void _navigateAfterDelay() {
     print('Setting up navigation delay...');
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 2), () {
       print('Navigation delay completed');
       if (mounted) {
         print('Navigating to onboarding...');

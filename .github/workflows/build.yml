@@ -48,7 +48,7 @@ jobs:
       run: |
         flutter clean
         flutter pub get
-        flutter build apk --release --split-per-abi
+        flutter build apk --release
         
     - name: Locate APK files
       working-directory: ./frontend
@@ -63,6 +63,5 @@ jobs:
       with:
         name: amora-apk
         path: |
-          frontend/build/app/outputs/flutter-apk/*.apk
-          frontend/build/app/outputs/apk/**/*.apk
+          frontend/build/app/outputs/flutter-apk/app-release.apk
         if-no-files-found: warn

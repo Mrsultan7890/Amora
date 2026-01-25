@@ -24,16 +24,12 @@ void main() async {
   print('App starting...');
   
   try {
-    // Initialize services
+    // Initialize API service first
     print('Initializing API service...');
     await ApiService.instance.initialize();
     print('API service initialized');
-    
-    print('Initializing location service...');
-    await LocationService.instance.initializeLocation();
-    print('Location service initialized');
   } catch (e) {
-    print('Service initialization error: $e');
+    print('API service initialization error: $e');
   }
   
   print('Starting app widget...');
@@ -62,17 +58,19 @@ class AmoraApp extends StatelessWidget {
           // Prevent app from closing on back gesture in main tabs
         },
         child: MaterialApp.router(
-          title: AppConstants.appName,
+          title: 'Amora',
           debugShowCheckedModeBanner: false,
           theme: AmoraTheme.lightTheme,
           darkTheme: AmoraTheme.darkTheme,
           themeMode: ThemeMode.light,
           routerConfig: _router,
           builder: (context, child) {
-            // Error boundary
-            return child ?? const Scaffold(
-              body: Center(
-                child: Text('App failed to load'),
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+              child: child ?? const Scaffold(
+                body: Center(
+                  child: Text('App failed to load'),
+                ),
               ),
             );
           },
