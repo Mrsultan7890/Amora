@@ -36,7 +36,10 @@ jobs:
       
     - name: Build APK
       working-directory: ./frontend
-      run: flutter build apk --release
+      run: |
+        flutter clean
+        flutter pub get
+        flutter build apk --release --no-tree-shake-icons
       
     - name: Build App Bundle
       working-directory: ./frontend
@@ -44,9 +47,10 @@ jobs:
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
+      if: success() || failure()
       with:
         name: amora-apk
-        path: frontend/build/app/outputs/flutter-apk/app-release.apk
+        path: frontend/build/app/outputs/flutter-apk/*.apk
         
     - name: Upload App Bundle
       uses: actions/upload-artifact@v4
