@@ -17,6 +17,8 @@ class ApiService {
   String get baseUrl => AppConstants.apiBaseUrl;
   
   Future<void> initialize() async {
+    print('Initializing API service with base URL: $baseUrl');
+    
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: Duration(seconds: AppConstants.connectTimeout),
@@ -29,12 +31,19 @@ class ApiService {
     // Add interceptors
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        print('API Request: ${options.method} ${options.uri}');
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
         }
         handler.next(options);
       },
+      onResponse: (response, handler) {
+        print('API Response: ${response.statusCode} ${response.requestOptions.uri}');
+        handler.next(response);
+      },
       onError: (error, handler) {
+        print('API Error: ${error.response?.statusCode} ${error.requestOptions.uri}');
+        print('Error data: ${error.response?.data}');
         if (error.response?.statusCode == 401) {
           _clearToken();
         }
@@ -43,6 +52,7 @@ class ApiService {
     ));
     
     await _loadToken();
+    print('API service initialized successfully');
   }
   
   Future<void> _loadToken() async {
@@ -98,18 +108,30 @@ class ApiService {
     required String password,
   }) async {
     try {
+      print('Login attempt for: $email');
+      print('API URL: $baseUrl/auth/login');
+      
       final formData = FormData.fromMap({
         'username': email,
         'password': password,
       });
       
+      print('Sending login request...');
       final response = await _dio.post('/auth/login', data: formData);
+      print('Login response: ${response.statusCode}');
+      print('Login data: ${response.data}');
       
       final token = response.data['access_token'];
       await _saveToken(token);
       
       return response.data;
     } catch (e) {
+      print('Login error: $e');
+      if (e is DioException) {
+        print('DioException type: ${e.type}');
+        print('DioException message: ${e.message}');
+        print('DioException response: ${e.response?.data}');
+      }
       throw _handleError(e);
     }
   }

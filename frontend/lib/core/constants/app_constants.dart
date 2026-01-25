@@ -2,13 +2,8 @@ import 'package:flutter/foundation.dart';
 
 class AppConstants {
   // API Configuration
-  static const String apiBaseUrl = kDebugMode 
-      ? 'http://10.0.2.2:8000/api'     // Debug/Emulator
-      : 'http://10.0.2.2:8000/api';    // Use same for now - change when deployed
-      
-  static const String wsBaseUrl = kDebugMode
-      ? 'ws://10.0.2.2:8000/ws'        // Debug/Emulator  
-      : 'ws://10.0.2.2:8000/ws';       // Use same for now - change when deployed
+  static const String apiBaseUrl = 'http://127.0.0.1:8000/api'; // Localhost for same device
+  static const String wsBaseUrl = 'ws://127.0.0.1:8000/ws';
   
   // App Configuration
   static const String appName = 'Amora';
