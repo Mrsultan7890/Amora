@@ -3,6 +3,7 @@ import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../shared/models/user_model.dart';
 
@@ -32,7 +33,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
     });
 
     try {
-      final profiles = await _apiService.getDiscoverProfiles(limit: 20);
+      final profiles = await _apiService.getDiscoverProfiles(limit: AppConstants.maxProfilesPerLoad);
       setState(() {
         _profiles = profiles;
         _isLoading = false;

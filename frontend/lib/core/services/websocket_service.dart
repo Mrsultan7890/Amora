@@ -1,6 +1,6 @@
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
+import '../constants/app_constants.dart';
 
 class WebSocketService {
   static WebSocketService? _instance;
@@ -11,13 +11,7 @@ class WebSocketService {
   WebSocketChannel? _channel;
   String? _userId;
   
-  String get wsUrl {
-    try {
-      return dotenv.env['WS_BASE_URL'] ?? 'ws://10.0.2.2:8000/ws';
-    } catch (e) {
-      return 'ws://10.0.2.2:8000/ws';
-    }
-  }
+  String get wsUrl => AppConstants.wsBaseUrl;
   
   Future<void> connect(String userId) async {
     try {

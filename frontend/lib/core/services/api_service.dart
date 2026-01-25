@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../constants/app_constants.dart';
 import '../../shared/models/user_model.dart';
 import '../../shared/models/match_model.dart';
 import '../../shared/models/message_model.dart';
@@ -14,19 +14,13 @@ class ApiService {
   late Dio _dio;
   String? _token;
   
-  String get baseUrl {
-    try {
-      return dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000/api';
-    } catch (e) {
-      return 'http://10.0.2.2:8000/api';
-    }
-  }
+  String get baseUrl => AppConstants.apiBaseUrl;
   
   Future<void> initialize() async {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
+      connectTimeout: Duration(seconds: AppConstants.connectTimeout),
+      receiveTimeout: Duration(seconds: AppConstants.receiveTimeout),
       headers: {
         'Content-Type': 'application/json',
       },

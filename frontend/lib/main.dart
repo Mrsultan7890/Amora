@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/theme/app_theme.dart';
@@ -22,13 +21,6 @@ import 'core/services/location_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Load environment variables with error handling
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    print('Warning: .env file not found, using defaults');
-  }
   
   // Initialize services
   await ApiService.instance.initialize();
