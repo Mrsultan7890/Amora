@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../shared/models/user_model.dart';
@@ -143,12 +144,27 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   child: _currentUser!.photos.isNotEmpty
                                       ? ClipOval(
-                                          child: Image.network(
-                                            _currentUser!.photos.first,
+                                          child: CachedNetworkImage(
+                                            imageUrl: _currentUser!.photos.first,
                                             width: 120,
                                             height: 120,
                                             fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
+                                            placeholder: (context, url) => Container(
+                                              width: 120,
+                                              height: 120,
+                                              decoration: const BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                gradient: AmoraTheme.primaryGradient,
+                                              ),
+                                              child: const Center(
+                                                child: CircularProgressIndicator(
+                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                ),
+                                              ),
+                                            ),
+                                            errorWidget: (context, url, error) {
+                                              print('Profile image error: $error');
+                                              print('Image URL: $url');
                                               return const Icon(
                                                 Icons.person,
                                                 size: 60,
