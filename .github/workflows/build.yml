@@ -49,6 +49,13 @@ jobs:
         flutter clean
         flutter pub get
         flutter build apk --release --no-tree-shake-icons
+        
+    - name: Locate APK files
+      working-directory: ./frontend
+      run: |
+        echo "Searching for APK files..."
+        find build -name "*.apk" -type f || echo "No APK files found"
+        ls -la build/app/outputs/ || echo "outputs directory not found"
       
     - name: Build App Bundle
       working-directory: ./frontend
@@ -56,10 +63,13 @@ jobs:
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
-      if: success() || failure()
+      if: always()
       with:
         name: amora-apk
-        path: frontend/build/app/outputs/flutter-apk/*.apk
+        path: |
+          frontend/build/app/outputs/flutter-apk/*.apk
+          frontend/build/app/outputs/apk/**/*.apk
+        if-no-files-found: warn
         
     - name: Upload App Bundle
       uses: actions/upload-artifact@v4
