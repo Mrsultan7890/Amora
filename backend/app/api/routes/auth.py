@@ -39,13 +39,58 @@ class UserResponse(BaseModel):
     bio: str = ""
     job: Optional[str] = None
     education: Optional[str] = None
-    photos: str = "[]"
+    photos: list[str] = []
+    interests: list[str] = []
     is_verified: bool
     is_online: bool
     created_at: datetime
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     class Config:
         from_attributes = True
+    
+    @classmethod
+    def model_validate(cls, user):
+        import json
+        photos = []
+        interests = []
+        
+        try:
+            if user.photos:
+                photos = json.loads(user.photos) if isinstance(user.photos, str) else user.photos
+        except:
+            photos = []
+            
+        # Get interests from database
+        try:
+            from app.core.database import SessionLocal, user_interests
+            db = SessionLocal()
+            interest_rows = db.execute(
+                user_interests.select().where(user_interests.c.user_id == user.id)
+            ).fetchall()
+            interests = [row.interest for row in interest_rows]
+            db.close()
+        except:
+            interests = []
+        
+        return cls(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            age=user.age,
+            gender=user.gender,
+            bio=user.bio or "",
+            job=user.job,
+            education=user.education,
+            photos=photos,
+            interests=interests,
+            is_verified=user.is_verified,
+            is_online=user.is_online,
+            created_at=user.created_at,
+            latitude=user.latitude,
+            longitude=user.longitude
+        )
 
 class Token(BaseModel):
     access_token: str
@@ -114,6 +159,18 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_user)
         print(f"User created successfully: {db_user.id}")
+        
+        # Add interests
+        if user_data.interests:
+            from app.core.database import user_interests
+            for interest in user_data.interests:
+                db.execute(
+                    user_interests.insert().values(
+                        user_id=db_user.id,
+                        interest=interest
+                    )
+                )
+            db.commit()
         
         # Create access token
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)

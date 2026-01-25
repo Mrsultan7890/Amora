@@ -44,6 +44,22 @@ async def update_profile(
     if profile_data.longitude is not None:
         current_user.longitude = profile_data.longitude
     
+    # Update interests
+    if profile_data.interests is not None:
+        from app.core.database import user_interests
+        # Delete existing interests
+        db.execute(
+            user_interests.delete().where(user_interests.c.user_id == current_user.id)
+        )
+        # Add new interests
+        for interest in profile_data.interests:
+            db.execute(
+                user_interests.insert().values(
+                    user_id=current_user.id,
+                    interest=interest
+                )
+            )
+    
     db.commit()
     db.refresh(current_user)
     

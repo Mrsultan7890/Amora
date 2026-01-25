@@ -50,7 +50,14 @@ async def create_swipe(
         
         if reverse_swipe:
             is_match = True
-            # Create match logic here
+            # Create match
+            from app.core.database import Match
+            match = Match(
+                user1_id=current_user.id,
+                user2_id=swipe_data.swiped_user_id
+            )
+            db.add(match)
+            db.commit()
     
     return {"is_match": is_match, "swipe_id": swipe.id}
 
