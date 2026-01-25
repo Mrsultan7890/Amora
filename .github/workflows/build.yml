@@ -48,7 +48,7 @@ jobs:
       run: |
         flutter clean
         flutter pub get
-        flutter build apk --debug
+        flutter build apk --release --split-per-abi
         
     - name: Locate APK files
       working-directory: ./frontend

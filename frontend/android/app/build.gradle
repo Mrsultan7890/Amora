@@ -66,13 +66,17 @@ android {
         release {
             // Use debug signing for now
             signingConfig signingConfigs.debug
-            minifyEnabled false
-            shrinkResources false
-            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             
             // Build config fields
-            buildConfigField "String", "API_BASE_URL", "\"https://api.amora.app\""
-            buildConfigField "String", "WS_BASE_URL", "\"wss://api.amora.app/ws\""
+            buildConfigField "String", "API_BASE_URL", "\"http://10.0.2.2:8000/api\""
+            buildConfigField "String", "WS_BASE_URL", "\"ws://10.0.2.2:8000/ws\""
+        }
+        debug {
+            buildConfigField "String", "API_BASE_URL", "\"http://10.0.2.2:8000/api\""
+            buildConfigField "String", "WS_BASE_URL", "\"ws://10.0.2.2:8000/ws\""
         }
     }
 
