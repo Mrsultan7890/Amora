@@ -213,10 +213,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         margin: const EdgeInsets.symmetric(horizontal: 16),
-                        child: const Column(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'About Me',
                               style: TextStyle(
                                 fontSize: 18,
@@ -224,7 +224,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 color: AmoraTheme.deepMidnight,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
                               _currentUser!.bio.isEmpty ? 'No bio added yet' : _currentUser!.bio,
                               style: const TextStyle(
@@ -260,7 +260,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               spacing: 8,
                               runSpacing: 8,
                               children: _currentUser!.interests.isEmpty 
-                                  ? [const Text('No interests added yet', style: TextStyle(color: AmoraTheme.deepMidnight))]
+                                  ? [Text('No interests added yet', style: TextStyle(color: AmoraTheme.deepMidnight))]
                                   : _currentUser!.interests.map((interest) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
