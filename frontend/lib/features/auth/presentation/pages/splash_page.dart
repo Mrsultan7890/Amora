@@ -16,12 +16,16 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
+    print('SplashPage initialized');
     _navigateAfterDelay();
   }
 
   void _navigateAfterDelay() {
+    print('Setting up navigation delay...');
     Future.delayed(const Duration(seconds: 3), () {
+      print('Navigation delay completed');
       if (mounted) {
+        print('Navigating to onboarding...');
         context.go('/onboarding');
       }
     });
@@ -31,9 +35,15 @@ class _SplashPageState extends State<SplashPage> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        print('Auth state changed: ${state.runtimeType}');
         if (state is AuthAuthenticated) {
+          print('User authenticated, navigating to discover');
           context.go('/discover');
         } else if (state is AuthUnauthenticated) {
+          print('User not authenticated, navigating to onboarding');
+          context.go('/onboarding');
+        } else if (state is AuthError) {
+          print('Auth error: ${state.message}');
           context.go('/onboarding');
         }
       },

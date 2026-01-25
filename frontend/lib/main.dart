@@ -22,25 +22,22 @@ import 'core/services/location_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize services
-  await ApiService.instance.initialize();
+  print('App starting...');
   
   try {
+    // Initialize services
+    print('Initializing API service...');
+    await ApiService.instance.initialize();
+    print('API service initialized');
+    
+    print('Initializing location service...');
     await LocationService.instance.initializeLocation();
+    print('Location service initialized');
   } catch (e) {
-    print('Warning: Location service failed to initialize');
+    print('Service initialization error: $e');
   }
   
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
-  
+  print('Starting app widget...');
   runApp(const AmoraApp());
 }
 
@@ -49,25 +46,37 @@ class AmoraApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('Building AmoraApp widget...');
+    
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => AuthBloc()..add(AuthCheckRequested()),
+          create: (context) {
+            print('Creating AuthBloc...');
+            return AuthBloc()..add(AuthCheckRequested());
+          },
         ),
       ],
       child: PopScope(
         canPop: false,
         onPopInvoked: (didPop) {
           // Prevent app from closing on back gesture in main tabs
-          // This will be handled by the navigation system
         },
         child: MaterialApp.router(
-          title: 'Amora',
+          title: AppConstants.appName,
           debugShowCheckedModeBanner: false,
           theme: AmoraTheme.lightTheme,
           darkTheme: AmoraTheme.darkTheme,
           themeMode: ThemeMode.light,
           routerConfig: _router,
+          builder: (context, child) {
+            // Error boundary
+            return child ?? const Scaffold(
+              body: Center(
+                child: Text('App failed to load'),
+              ),
+            );
+          },
         ),
       ),
     );
