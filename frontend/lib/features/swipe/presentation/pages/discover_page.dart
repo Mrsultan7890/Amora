@@ -185,6 +185,143 @@ class _DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
+  void _showNotifications() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Notifications',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AmoraTheme.deepMidnight,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  _buildNotificationItem(
+                    icon: Icons.favorite,
+                    iconColor: AmoraTheme.sunsetRose,
+                    title: 'New Match!',
+                    subtitle: 'You have a new match with Sarah',
+                    time: '2 min ago',
+                    isUnread: true,
+                  ),
+                  _buildNotificationItem(
+                    icon: Icons.message,
+                    iconColor: AmoraTheme.warmGold,
+                    title: 'New Message',
+                    subtitle: 'Emma sent you a message',
+                    time: '1 hour ago',
+                    isUnread: true,
+                  ),
+                  _buildNotificationItem(
+                    icon: Icons.star,
+                    iconColor: AmoraTheme.warmGold,
+                    title: 'Super Like!',
+                    subtitle: 'Someone super liked you',
+                    time: '3 hours ago',
+                    isUnread: false,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationItem({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required String time,
+    required bool isUnread,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isUnread ? AmoraTheme.offWhite : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isUnread ? AmoraTheme.sunsetRose.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: isUnread ? FontWeight.bold : FontWeight.w500,
+                    color: AmoraTheme.deepMidnight,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AmoraTheme.deepMidnight.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            time,
+            style: TextStyle(
+              fontSize: 12,
+              color: AmoraTheme.deepMidnight.withOpacity(0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -222,15 +359,50 @@ class _DiscoverPageState extends State<DiscoverPage> {
                       ),
                     ),
                     
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: AmoraTheme.glassmorphism(
-                        color: Colors.white,
-                        borderRadius: 16,
-                      ),
-                      child: const Icon(
-                        Icons.notifications_outlined,
-                        color: AmoraTheme.deepMidnight,
+                    GestureDetector(
+                      onTap: () {
+                        // TODO: Navigate to notifications page
+                        _showNotifications();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: AmoraTheme.glassmorphism(
+                          color: Colors.white,
+                          borderRadius: 16,
+                        ),
+                        child: Stack(
+                          children: [
+                            const Icon(
+                              Icons.notifications_outlined,
+                              color: AmoraTheme.deepMidnight,
+                            ),
+                            // Notification badge
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                  color: AmoraTheme.sunsetRose,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 12,
+                                  minHeight: 12,
+                                ),
+                                child: const Text(
+                                  '2',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
