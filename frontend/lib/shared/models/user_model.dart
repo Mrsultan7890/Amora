@@ -119,26 +119,26 @@ class UserModel extends Equatable {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'],
-      email: json['email'],
-      name: json['name'],
-      age: json['age'],
-      gender: json['gender'],
+      id: json['id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      age: json['age'] ?? 0,
+      gender: json['gender']?.toString() ?? '',
       photos: json['photos'] is String 
           ? (json['photos'] as String).isEmpty 
               ? <String>[] 
               : List<String>.from(jsonDecode(json['photos']))
           : List<String>.from(json['photos'] ?? []),
-      bio: json['bio'] ?? '',
-      interests: List<String>.from(json['interests'] ?? []),
+      bio: json['bio']?.toString() ?? '',
+      interests: json['interests'] != null ? List<String>.from(json['interests']) : <String>[],
       isVerified: json['is_verified'] ?? false,
       isOnline: json['is_online'] ?? false,
-      lastSeen: DateTime.parse(json['last_seen']),
-      createdAt: DateTime.parse(json['created_at']),
-      job: json['job'],
-      education: json['education'],
+      lastSeen: json['last_seen'] != null ? DateTime.parse(json['last_seen']) : DateTime.now(),
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
+      job: json['job']?.toString(),
+      education: json['education']?.toString(),
       height: json['height'],
-      relationshipGoal: json['relationship_goal'],
+      relationshipGoal: json['relationship_goal']?.toString(),
       languages: json['languages'] != null ? List<String>.from(json['languages']) : null,
       isPrivate: json['is_private'],
       latitude: json['latitude']?.toDouble(),
