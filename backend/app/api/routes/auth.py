@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import hashlib
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
@@ -13,8 +13,13 @@ from app.core.config import settings
 router = APIRouter()
 
 # Security
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
+
+def get_password_hash(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 # Pydantic models
 class UserCreate(BaseModel):
@@ -46,13 +51,6 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     user: UserResponse
-
-# Utility functions
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'dart:convert';
 
 class UserModel extends Equatable {
   final String id;
@@ -123,7 +124,11 @@ class UserModel extends Equatable {
       name: json['name'],
       age: json['age'],
       gender: json['gender'],
-      photos: List<String>.from(json['photos'] ?? []),
+      photos: json['photos'] is String 
+          ? (json['photos'] as String).isEmpty 
+              ? <String>[] 
+              : List<String>.from(jsonDecode(json['photos']))
+          : List<String>.from(json['photos'] ?? []),
       bio: json['bio'] ?? '',
       interests: List<String>.from(json['interests'] ?? []),
       isVerified: json['is_verified'] ?? false,
