@@ -286,6 +286,33 @@ class ApiService {
     }
   }
   
+  // Notification Methods
+  Future<Map<String, dynamic>> getNotifications() async {
+    try {
+      final response = await _dio.get('/notifications');
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<void> markNotificationRead(String notificationId) async {
+    try {
+      await _dio.put('/notifications/$notificationId/read');
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<int> getNotificationUnreadCount() async {
+    try {
+      final response = await _dio.get('/notifications/unread-count');
+      return response.data['unread_count'];
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
   // Account Actions
   Future<void> deleteAccount() async {
     try {

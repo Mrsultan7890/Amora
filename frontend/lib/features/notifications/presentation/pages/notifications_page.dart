@@ -23,7 +23,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Future<void> _loadNotifications() async {
     try {
-      final response = await _apiService.get('/notifications');
+      final response = await _apiService.getNotifications();
       setState(() {
         _notifications = List<Map<String, dynamic>>.from(response['notifications']);
         _isLoading = false;
@@ -37,7 +37,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Future<void> _markAsRead(String notificationId) async {
     try {
-      await _apiService.put('/notifications/$notificationId/read');
+      await _apiService.markNotificationRead(notificationId);
       _loadNotifications();
     } catch (e) {
       print('Error marking notification as read: $e');
