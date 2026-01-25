@@ -66,9 +66,10 @@ android {
         release {
             // Use debug signing for now
             signingConfig signingConfigs.debug
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled false
+            shrinkResources false
+            // Disable ProGuard temporarily to fix build
+            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             
             // Build config fields
             buildConfigField "String", "API_BASE_URL", "\"http://10.0.2.2:8000/api\""

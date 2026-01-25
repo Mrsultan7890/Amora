@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/settings_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -11,6 +13,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  final SettingsService _settingsService = SettingsService.instance;
+  
   // Settings values
   bool _pushNotifications = true;
   bool _emailNotifications = false;
@@ -21,6 +25,38 @@ class _SettingsPageState extends State<SettingsPage> {
   String _interestedIn = 'Everyone';
   bool _showMeOnAmora = true;
   bool _incognitoMode = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+  
+  Future<void> _loadSettings() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final settings = await _settingsService.loadAllSettings();
+      final ageRange = settings['age_range'] as List<double>;
+      
+      setState(() {
+        _maxDistance = settings['max_distance'];
+        _ageRange = RangeValues(ageRange[0], ageRange[1]);
+        _interestedIn = settings['interested_in'];
+        _pushNotifications = settings['push_notifications'];
+        _emailNotifications = settings['email_notifications'];
+        _showOnlineStatus = settings['show_online_status'];
+        _showDistance = settings['show_distance'];
+        _showMeOnAmora = settings['show_me_on_amora'];
+        _incognitoMode = settings['incognito_mode'];
+      });
+    } catch (e) {
+      print('Error loading settings: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +115,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           _maxDistance,
                           1.0,
                           100.0,
-                          (value) => setState(() => _maxDistance = value),
+                          (value) async {
+                            setState(() => _maxDistance = value);
+                            await _settingsService.setMaxDistance(value);
+                          },
                         ),
                         
                         const Divider(height: 1),
@@ -90,7 +129,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           _ageRange,
                           18.0,
                           80.0,
-                          (values) => setState(() => _ageRange = values),
+                          (values) async {
+                            setState(() => _ageRange = values);
+                            await _settingsService.setAgeRange(values.start, values.end);
+                          },
                         ),
                         
                         const Divider(height: 1),
@@ -99,7 +141,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Show Me',
                           _interestedIn,
                           ['Everyone', 'Men', 'Women', 'Non-binary'],
-                          (value) => setState(() => _interestedIn = value!),
+                          (value) async {
+                            setState(() => _interestedIn = value!);
+                            await _settingsService.setInterestedIn(value!);
+                          },
                         ),
                       ]).animate()
                         .fadeIn(delay: 200.ms, duration: 600.ms)
@@ -115,7 +160,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Push Notifications',
                           'Get notified about new matches and messages',
                           _pushNotifications,
-                          (value) => setState(() => _pushNotifications = value),
+                          (value) async {
+                            setState(() => _pushNotifications = value);
+                            await _settingsService.setPushNotifications(value);
+                          },
                         ),
                         
                         const Divider(height: 1),
@@ -124,7 +172,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Email Notifications',
                           'Receive updates via email',
                           _emailNotifications,
-                          (value) => setState(() => _emailNotifications = value),
+                          (value) async {
+                            setState(() => _emailNotifications = value);
+                            await _settingsService.setEmailNotifications(value);
+                          },
                         ),
                       ]).animate()
                         .fadeIn(delay: 400.ms, duration: 600.ms)
@@ -183,9 +234,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Blocked Users',
                           'Manage blocked profiles',
                           Icons.block,
-                          () {
-                            // Navigate to blocked users
-                          },
+                          () => _showBlockedUsersPage(),
                         ),
                         
                         const Divider(height: 1),
@@ -194,9 +243,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Privacy Policy',
                           'Read our privacy policy',
                           Icons.privacy_tip,
-                          () {
-                            // Open privacy policy
-                          },
+                          () => _openUrl('https://amora.app/privacy'),
                         ),
                         
                         const Divider(height: 1),
@@ -205,9 +252,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Terms of Service',
                           'Read our terms of service',
                           Icons.description,
-                          () {
-                            // Open terms of service
-                          },
+                          () => _openUrl('https://amora.app/terms'),
                         ),
                         
                         const Divider(height: 1),
@@ -216,9 +261,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Help & Support',
                           'Get help or contact support',
                           Icons.help,
-                          () {
-                            // Open help center
-                          },
+                          () => _openUrl('mailto:support@amora.app'),
                         ),
                         
                         const Divider(height: 1),
@@ -538,12 +581,131 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _deleteAccount() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Account deletion requested. You will receive a confirmation email.'),
-        backgroundColor: Colors.red,
+  void _deleteAccount() async {
+    try {
+      await _settingsService.deleteAccount();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.go('/onboarding');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete account: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  void _showBlockedUsersPage() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Blocked Users',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AmoraTheme.deepMidnight,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: FutureBuilder<List<String>>(
+                    future: _settingsService.getBlockedUsers(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No blocked users',
+                            style: TextStyle(color: AmoraTheme.deepMidnight),
+                          ),
+                        );
+                      }
+                      
+                      return ListView.builder(
+                        controller: scrollController,
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) {
+                          final userId = snapshot.data![index];
+                          return ListTile(
+                            leading: const CircleAvatar(
+                              child: Icon(Icons.person),
+                            ),
+                            title: Text('User $userId'),
+                            trailing: TextButton(
+                              onPressed: () async {
+                                await _settingsService.unblockUser(userId);
+                                Navigator.pop(context);
+                              },
+                              child: const Text(
+                                'Unblock',
+                                style: TextStyle(color: AmoraTheme.sunsetRose),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
+  }
+  
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open $url'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

@@ -6,6 +6,10 @@
 -keep class io.flutter.**  { *; }
 -keep class io.flutter.plugins.**  { *; }
 
+# Google Play Core (Fix for missing classes)
+-dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.** { *; }
+
 # Dio
 -keep class dio.** { *; }
 
@@ -31,3 +35,8 @@
 -keep class **.*Model { *; }
 -keep class **.*Response { *; }
 -keep class **.*Request { *; }
+
+# Prevent obfuscation of native methods
+-keepclasseswithmembernames class * {
+    native <methods>;
+}

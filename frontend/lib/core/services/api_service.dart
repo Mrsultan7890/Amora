@@ -264,7 +264,39 @@ class ApiService {
     }
   }
   
-  // Error handling
+  // Account Actions
+  Future<void> deleteAccount() async {
+    try {
+      await _dio.delete('/users/account');
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<Map<String, dynamic>> getBlockedUsers() async {
+    try {
+      final response = await _dio.get('/users/blocked');
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<void> blockUser(String userId) async {
+    try {
+      await _dio.post('/users/block', data: {'user_id': userId});
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<void> unblockUser(String userId) async {
+    try {
+      await _dio.delete('/users/block/$userId');
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
   String _handleError(dynamic error) {
     if (error is DioException) {
       if (error.response != null) {

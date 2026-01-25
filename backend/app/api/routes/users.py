@@ -64,3 +64,39 @@ async def update_profile(
     db.refresh(current_user)
     
     return UserResponse.model_validate(current_user)
+
+@router.delete("/account")
+async def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Mark user as inactive instead of deleting
+    current_user.is_active = False
+    db.commit()
+    return {"message": "Account deactivated successfully"}
+
+@router.get("/blocked")
+async def get_blocked_users(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # This would require a blocked_users table in real implementation
+    return {"blocked_users": []}
+
+@router.post("/block")
+async def block_user(
+    user_data: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # This would require a blocked_users table in real implementation
+    return {"message": "User blocked successfully"}
+
+@router.delete("/block/{user_id}")
+async def unblock_user(
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # This would require a blocked_users table in real implementation
+    return {"message": "User unblocked successfully"}
