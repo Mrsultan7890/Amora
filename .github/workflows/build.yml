@@ -56,11 +56,7 @@ jobs:
         echo "Searching for APK files..."
         find build -name "*.apk" -type f || echo "No APK files found"
         ls -la build/app/outputs/ || echo "outputs directory not found"
-      
-    - name: Build App Bundle
-      working-directory: ./frontend
-      run: flutter build appbundle --release
-      
+        
     - name: Upload APK
       uses: actions/upload-artifact@v4
       if: always()
@@ -70,9 +66,3 @@ jobs:
           frontend/build/app/outputs/flutter-apk/*.apk
           frontend/build/app/outputs/apk/**/*.apk
         if-no-files-found: warn
-        
-    - name: Upload App Bundle
-      uses: actions/upload-artifact@v4
-      with:
-        name: amora-aab
-        path: frontend/build/app/outputs/bundle/release/app-release.aab
