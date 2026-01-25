@@ -23,12 +23,21 @@ import 'core/services/location_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load environment variables with error handling
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('Warning: .env file not found, using defaults');
+  }
   
   // Initialize services
   await ApiService.instance.initialize();
-  await LocationService.instance.initializeLocation();
+  
+  try {
+    await LocationService.instance.initializeLocation();
+  } catch (e) {
+    print('Warning: Location service failed to initialize');
+  }
   
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(

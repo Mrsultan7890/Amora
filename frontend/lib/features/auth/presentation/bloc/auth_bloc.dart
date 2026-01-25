@@ -103,12 +103,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       if (_apiService.isAuthenticated) {
         final user = await _apiService.getCurrentUser();
-        await _wsService.connect(user.id);
+        try {
+          await _wsService.connect(user.id);
+        } catch (e) {
+          print('WebSocket connection failed: $e');
+        }
         emit(AuthAuthenticated(user));
       } else {
         emit(AuthUnauthenticated());
       }
     } catch (e) {
+      print('Auth check failed: $e');
       emit(AuthUnauthenticated());
     }
   }

@@ -14,7 +14,13 @@ class ApiService {
   late Dio _dio;
   String? _token;
   
-  String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000/api';
+  String get baseUrl {
+    try {
+      return dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000/api';
+    } catch (e) {
+      return 'http://10.0.2.2:8000/api';
+    }
+  }
   
   Future<void> initialize() async {
     _dio = Dio(BaseOptions(

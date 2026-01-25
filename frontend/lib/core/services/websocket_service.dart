@@ -11,7 +11,13 @@ class WebSocketService {
   WebSocketChannel? _channel;
   String? _userId;
   
-  String get wsUrl => dotenv.env['WS_BASE_URL'] ?? 'ws://localhost:8000/ws';
+  String get wsUrl {
+    try {
+      return dotenv.env['WS_BASE_URL'] ?? 'ws://10.0.2.2:8000/ws';
+    } catch (e) {
+      return 'ws://10.0.2.2:8000/ws';
+    }
+  }
   
   Future<void> connect(String userId) async {
     try {
