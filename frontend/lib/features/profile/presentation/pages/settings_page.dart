@@ -100,7 +100,15 @@ class _SettingsPageState extends State<SettingsPage> {
               
               // Content
               Expanded(
-                child: SingleChildScrollView(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AmoraTheme.sunsetRose,
+                          ),
+                        ),
+                      )
+                    : SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,6 +291,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
                 ),
+              ),
               ),
             ],
           ),

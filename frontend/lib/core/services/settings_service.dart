@@ -1,5 +1,4 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constants/app_constants.dart';
 import 'api_service.dart';
 
 class SettingsService {
