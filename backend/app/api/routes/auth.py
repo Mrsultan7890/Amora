@@ -56,10 +56,21 @@ class UserResponse(BaseModel):
         photos = []
         interests = []
         
+        print(f"UserResponse.model_validate called for user: {user.id}")
+        print(f"Raw photos from DB: {user.photos}")
+        
         try:
             if user.photos:
-                photos = json.loads(user.photos) if isinstance(user.photos, str) else user.photos
-        except:
+                if isinstance(user.photos, str):
+                    photos = json.loads(user.photos)
+                    print(f"Parsed photos from JSON: {photos}")
+                else:
+                    photos = user.photos
+                    print(f"Photos already list: {photos}")
+            else:
+                print("No photos in database")
+        except Exception as e:
+            print(f"Error parsing photos: {e}")
             photos = []
             
         # Get interests from database
@@ -70,11 +81,13 @@ class UserResponse(BaseModel):
                 user_interests.select().where(user_interests.c.user_id == user.id)
             ).fetchall()
             interests = [row.interest for row in interest_rows]
+            print(f"Loaded interests: {interests}")
             db.close()
-        except:
+        except Exception as e:
+            print(f"Error loading interests: {e}")
             interests = []
         
-        return cls(
+        result = cls(
             id=user.id,
             email=user.email,
             name=user.name,
@@ -91,6 +104,9 @@ class UserResponse(BaseModel):
             latitude=user.latitude,
             longitude=user.longitude
         )
+        
+        print(f"Final UserResponse photos: {result.photos}")
+        return result
 
 class Token(BaseModel):
     access_token: str

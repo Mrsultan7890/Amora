@@ -27,18 +27,26 @@ async def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    print(f"Profile update request: {profile_data}")
+    
     # Update user fields
     if profile_data.name is not None:
         current_user.name = profile_data.name
+        print(f"Updated name: {profile_data.name}")
     if profile_data.bio is not None:
         current_user.bio = profile_data.bio
+        print(f"Updated bio: {profile_data.bio}")
     if profile_data.job is not None:
         current_user.job = profile_data.job
+        print(f"Updated job: {profile_data.job}")
     if profile_data.education is not None:
         current_user.education = profile_data.education
+        print(f"Updated education: {profile_data.education}")
     if profile_data.photos is not None:
         import json
         current_user.photos = json.dumps(profile_data.photos)
+        print(f"Updated photos: {profile_data.photos}")
+        print(f"Photos JSON: {current_user.photos}")
     if profile_data.latitude is not None:
         current_user.latitude = profile_data.latitude
     if profile_data.longitude is not None:
@@ -59,11 +67,16 @@ async def update_profile(
                     interest=interest
                 )
             )
+        print(f"Updated interests: {profile_data.interests}")
     
     db.commit()
     db.refresh(current_user)
     
-    return UserResponse.model_validate(current_user)
+    print(f"Final user photos: {current_user.photos}")
+    response = UserResponse.model_validate(current_user)
+    print(f"Response photos: {response.photos}")
+    
+    return response
 
 @router.delete("/account")
 async def delete_account(
