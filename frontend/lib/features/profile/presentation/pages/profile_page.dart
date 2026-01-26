@@ -34,8 +34,24 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   Future<void> _loadUserData() async {
     try {
       final user = await _apiService.getCurrentUser();
-      final likes = await _apiService.getUserLikes();
-      final matches = await _apiService.getMatches();
+      
+      // Load likes and matches separately with error handling
+      List<Map<String, dynamic>> likes = [];
+      List<MatchModel> matches = [];
+      
+      try {
+        likes = await _apiService.getUserLikes();
+      } catch (e) {
+        print('Error loading likes: $e');
+        // Continue without likes data
+      }
+      
+      try {
+        matches = await _apiService.getMatches();
+      } catch (e) {
+        print('Error loading matches: $e');
+        // Continue without matches data
+      }
       
       setState(() {
         _currentUser = user;
