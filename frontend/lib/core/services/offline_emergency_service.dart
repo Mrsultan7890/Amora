@@ -225,21 +225,40 @@ Please call or come immediately!
   // Test emergency system
   Future<bool> testEmergencySystem() async {
     try {
+      print('Testing emergency system...');
+      
       // Check permissions
       final smsPermission = await Permission.sms.status;
       final phonePermission = await Permission.phone.status;
+      final locationPermission = await Permission.location.status;
       
-      if (!smsPermission.isGranted || !phonePermission.isGranted) {
+      print('SMS permission: $smsPermission');
+      print('Phone permission: $phonePermission');
+      print('Location permission: $locationPermission');
+      
+      if (!smsPermission.isGranted) {
+        print('SMS permission not granted');
+        return false;
+      }
+      
+      if (!phonePermission.isGranted) {
+        print('Phone permission not granted');
         return false;
       }
       
       // Check if contacts are configured
-      if (_contacts.where((c) => c.isEnabled).isEmpty) {
+      final enabledContacts = _contacts.where((c) => c.isEnabled).toList();
+      print('Enabled contacts: ${enabledContacts.length}');
+      
+      if (enabledContacts.isEmpty) {
+        print('No enabled emergency contacts');
         return false;
       }
       
+      print('Emergency system test passed!');
       return true;
     } catch (e) {
+      print('Emergency system test failed: $e');
       return false;
     }
   }

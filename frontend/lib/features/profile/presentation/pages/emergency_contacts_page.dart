@@ -441,16 +441,51 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     final isWorking = await _emergencyService.testEmergencySystem();
     
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isWorking 
-                ? '✅ Emergency system is ready!'
-                : '❌ Emergency system needs setup',
+      if (isWorking) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Emergency system is ready!'),
+            backgroundColor: Colors.green,
           ),
-          backgroundColor: isWorking ? Colors.green : Colors.red,
-        ),
-      );
+        );
+      } else {
+        // Show detailed setup instructions
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('⚠️ Emergency Setup Required'),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('To use emergency system, you need:'),
+                SizedBox(height: 12),
+                Text('1. 📞 Phone permission'),
+                Text('2. 💬 SMS permission'),
+                Text('3. 📍 Location permission'),
+                Text('4. 👥 At least 1 emergency contact'),
+                SizedBox(height: 12),
+                Text('Tap "Grant Permissions" to setup.'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _emergencyService.requestPermissions();
+                  // Retest after permissions
+                  _testEmergencySystem();
+                },
+                child: const Text('Grant Permissions'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 }
