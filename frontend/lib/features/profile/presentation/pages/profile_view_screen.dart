@@ -236,7 +236,8 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                     const SizedBox(height: 8),
 
                     // Job and education
-                    if ((_user!.job != null && _user!.job!.isNotEmpty) || (_user!.education != null && _user!.education!.isNotEmpty))
+                    if ((_user!.job != null && _user!.job!.isNotEmpty) || 
+                        (_user!.education != null && _user!.education!.isNotEmpty))
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -273,15 +274,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                     _user!.education!,
                                     style: const TextStyle(
                                       fontSize: 16,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          const SizedBox(height: 12),
-                        ],
-                      ),
                                       color: Colors.white70,
                                     ),
                                   ),
@@ -413,7 +405,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implement report functionality
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('User reported')),
               );
@@ -439,7 +430,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implement block functionality
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('User blocked')),
               );

@@ -49,7 +49,9 @@ class _MatchesPageState extends State<MatchesPage> {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredMatches = _matches.where((match) {
-        final userName = match.otherUser?.name?.toLowerCase() ?? '';
+        final otherUser = match.otherUser;
+        if (otherUser == null) return false;
+        final userName = otherUser.name.toLowerCase();
         return userName.contains(query);
       }).toList();
     });
@@ -373,7 +375,9 @@ class MatchSearchDelegate extends SearchDelegate<MatchModel?> {
 
   Widget _buildSearchResults() {
     final filteredMatches = matches.where((match) {
-      final userName = match.otherUser?.name?.toLowerCase() ?? '';
+      final otherUser = match.otherUser;
+      if (otherUser == null) return false;
+      final userName = otherUser.name.toLowerCase();
       return userName.contains(query.toLowerCase());
     }).toList();
 
