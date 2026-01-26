@@ -31,6 +31,17 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   Future<void> _loadContacts() async {
     setState(() => _isLoading = true);
     await _emergencyService.initialize();
+    
+    // Always ensure default contacts are present
+    final defaultContacts = DefaultEmergencyContacts.getDefaults();
+    final existingIds = _emergencyService.contacts.map((c) => c.id).toSet();
+    
+    for (final defaultContact in defaultContacts) {
+      if (!existingIds.contains(defaultContact.id)) {
+        await _emergencyService.addContact(defaultContact);
+      }
+    }
+    
     setState(() {
       _contacts = _emergencyService.contacts;
       _isLoading = false;
