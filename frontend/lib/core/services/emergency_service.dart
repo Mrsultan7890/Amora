@@ -18,8 +18,8 @@ class EmergencyService {
   DateTime? _lastShakeTime;
   
   // Shake detection parameters
-  static const double _shakeThreshold = 12.0;
-  static const int _shakeCooldown = 5000; // 5 seconds
+  static const double _shakeThreshold = 15.0; // Increased threshold
+  static const int _shakeCooldown = 30000; // 30 seconds cooldown
   
   Future<void> initialize() async {
     print('🚨 EmergencyService: Initializing...');

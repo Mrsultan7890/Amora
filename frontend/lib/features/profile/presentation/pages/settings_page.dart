@@ -218,7 +218,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         
                         _buildSwitchSetting(
                           'Emergency Shake Alert',
-                          'Shake phone to send emergency alert to all matches',
+                          'Shake phone to send emergency alert (30s cooldown)',
                           _emergencyShakeEnabled,
                           (value) async {
                             setState(() => _emergencyShakeEnabled = value);
@@ -226,6 +226,21 @@ class _SettingsPageState extends State<SettingsPage> {
                             // Update emergency service
                             final EmergencyService emergencyService = EmergencyService.instance;
                             await emergencyService.setEmergencyEnabled(value);
+                            
+                            // Show feedback
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    value 
+                                      ? '🚨 Emergency shake detection ENABLED' 
+                                      : '❌ Emergency shake detection DISABLED'
+                                  ),
+                                  backgroundColor: value ? Colors.green : Colors.red,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
                           },
                         ),
                         

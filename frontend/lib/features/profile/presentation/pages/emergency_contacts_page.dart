@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_emergency_service.dart';
 import '../../../../core/services/sms_service.dart';
@@ -18,11 +19,13 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   final OfflineEmergencyService _emergencyService = OfflineEmergencyService.instance;
   List<EmergencyContact> _contacts = [];
   bool _isLoading = true;
+  Map<String, bool> _permissionStatus = {};
 
   @override
   void initState() {
     super.initState();
     _loadContacts();
+    _checkPermissions();
   }
 
   Future<void> _loadContacts() async {
@@ -31,6 +34,23 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     setState(() {
       _contacts = _emergencyService.contacts;
       _isLoading = false;
+    });
+  }
+
+  Future<void> _checkPermissions() async {
+    final smsPermission = await Permission.sms.status;
+    final phonePermission = await Permission.phone.status;
+    final locationPermission = await Permission.location.status;
+    final hasSpecialPermissions = await SmsService.checkPermissions();
+    
+    setState(() {
+      _permissionStatus = {
+        'SMS': smsPermission.isGranted,
+        'Phone': phonePermission.isGranted,
+        'Location': locationPermission.isGranted,
+        'Battery Optimization': hasSpecialPermissions,
+        'Display Over Apps': hasSpecialPermissions,
+      };
     });
   }
 
@@ -78,6 +98,74 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                 ),
               ),
 
+              // Emergency toggle
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: AmoraTheme.glassmorphism(
+                  color: _emergencyService.isEnabled ? Colors.green.shade50 : Colors.grey.shade50,
+                  borderRadius: 12,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _emergencyService.isEnabled ? Icons.security : Icons.security_outlined,
+                      color: _emergencyService.isEnabled ? Colors.green : Colors.grey,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Emergency System',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: _emergencyService.isEnabled ? Colors.green : Colors.grey,
+                            ),
+                          ),
+                          Text(
+                            _emergencyService.isEnabled 
+                              ? 'Shake detection active (30s cooldown)'
+                              : 'Shake detection disabled',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: _emergencyService.isEnabled ? Colors.green.shade700 : Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _emergencyService.isEnabled,
+                      onChanged: (value) async {
+                        await _emergencyService.setEnabled(value);
+                        setState(() {});
+                        
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                value 
+                                  ? '🚨 Emergency system ENABLED' 
+                                  : '❌ Emergency system DISABLED'
+                              ),
+                              backgroundColor: value ? Colors.green : Colors.red,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                      activeColor: Colors.green,
+                    ),
+                  ],
+                ),
+              ).animate()
+                .fadeIn(duration: 600.ms)
+                .slideY(begin: 0.3, end: 0),
+
               // Info card
               Container(
                 margin: const EdgeInsets.all(16),
@@ -116,6 +204,105 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                         color: Colors.red,
                       ),
                     ),
+                  ],
+                ),
+              ).animate()
+                .fadeIn(duration: 600.ms)
+                .slideY(begin: 0.3, end: 0),
+
+              // Permission status card
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: AmoraTheme.glassmorphism(
+                  color: Colors.blue.shade50,
+                  borderRadius: 12,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.verified_user,
+                          color: Colors.blue.shade600,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Permission Status',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () async {
+                            await _checkPermissions();
+                          },
+                          child: const Text('Refresh'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ..._permissionStatus.entries.map((entry) => 
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Icon(
+                              entry.value ? Icons.check_circle : Icons.cancel,
+                              color: entry.value ? Colors.green : Colors.red,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                entry.key,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: entry.value ? Colors.green.shade700 : Colors.red.shade700,
+                                ),
+                              ),
+                            ),
+                            if (!entry.value)
+                              TextButton(
+                                onPressed: () => _requestSpecificPermission(entry.key),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                ),
+                                child: const Text(
+                                  'Grant',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ).toList(),
+                    if (_permissionStatus.values.any((granted) => !granted))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              await SmsService.requestSpecialPermissions();
+                              await _emergencyService.requestPermissions();
+                              await Future.delayed(const Duration(seconds: 1));
+                              await _checkPermissions();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: const Text('Grant All Permissions'),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ).animate()

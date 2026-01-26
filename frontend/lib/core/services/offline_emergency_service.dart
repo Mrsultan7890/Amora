@@ -113,12 +113,12 @@ class OfflineEmergencyService {
       // Get current location
       final location = await LocationService.instance.getCurrentLocation();
       
-      // Send SMS to all contacts
+      // Send SMS to all contacts first (faster)
       if (_autoSmsEnabled) {
         await _sendEmergencySMS(location?.latitude, location?.longitude);
       }
       
-      // Start call sequence
+      // Then start call sequence
       await _startEmergencyCallSequence();
       
       // Trigger alarm and flash
@@ -130,8 +130,8 @@ class OfflineEmergencyService {
     } catch (e) {
       // Continue even if some parts fail
     } finally {
-      // Reset after 1 minute (shorter for testing)
-      Timer(const Duration(minutes: 1), () {
+      // Reset after 2 minutes to allow for multiple emergency attempts if needed
+      Timer(const Duration(minutes: 2), () {
         _isEmergencyActive = false;
       });
     }
@@ -165,12 +165,17 @@ class OfflineEmergencyService {
     
     if (enabledContacts.isEmpty) return;
     
-    // Make automatic calls to all contacts
-    for (final contact in enabledContacts) {
+    // Make automatic calls to all contacts with proper delay
+    for (int i = 0; i < enabledContacts.length; i++) {
+      final contact = enabledContacts[i];
       try {
-        await SmsService.makeCall(contact.phoneNumber);
-        // Wait 3 seconds between calls
-        await Future.delayed(const Duration(seconds: 3));
+        bool callMade = await SmsService.makeCall(contact.phoneNumber);
+        if (callMade) {
+          // Wait 10 seconds between calls to allow user to answer/decline
+          if (i < enabledContacts.length - 1) {
+            await Future.delayed(const Duration(seconds: 10));
+          }
+        }
       } catch (e) {
         // Continue with next contact
       }
