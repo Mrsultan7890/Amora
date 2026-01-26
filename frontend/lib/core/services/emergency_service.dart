@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:math';
 import 'api_service.dart';
 import 'location_service.dart';
+import 'offline_emergency_service.dart';
 
 class EmergencyService {
   static EmergencyService? _instance;
@@ -86,19 +87,37 @@ class EmergencyService {
       // Vibrate phone
       HapticFeedback.heavyImpact();
       
-      // Get current location
-      final location = await LocationService.instance.getCurrentLocation();
+      // Try online emergency first
+      bool onlineSuccess = false;
+      try {
+        // Get current location
+        final location = await LocationService.instance.getCurrentLocation();
+        
+        // Send emergency alert to all matches
+        final result = await ApiService.instance.sendEmergencyAlert(
+          latitude: location?.latitude,
+          longitude: location?.longitude,
+        );
+        
+        print('Online emergency alert sent successfully: $result');
+        _showEmergencyConfirmation(result);
+        onlineSuccess = true;
+        
+      } catch (e) {
+        print('Online emergency failed: $e');
+        onlineSuccess = false;
+      }
       
-      // Send emergency alert to all matches
-      final result = await ApiService.instance.sendEmergencyAlert(
-        latitude: location?.latitude,
-        longitude: location?.longitude,
-      );
-      
-      print('Emergency alert sent successfully: $result');
-      
-      // Show success notification to user
-      _showEmergencyConfirmation(result);
+      // If online fails OR as backup, trigger offline emergency
+      if (!onlineSuccess) {
+        print('Triggering offline emergency as fallback');
+        await OfflineEmergencyService.instance.triggerOfflineEmergency();
+        _showOfflineEmergencyConfirmation();
+      } else {
+        // Even if online works, still trigger offline as backup
+        print('Triggering offline emergency as backup');
+        await OfflineEmergencyService.instance.triggerOfflineEmergency();
+      }
       
     } catch (e) {
       print('Failed to send emergency alert: $e');
@@ -133,5 +152,14 @@ class EmergencyService {
     HapticFeedback.heavyImpact();
     Timer(const Duration(milliseconds: 200), () => HapticFeedback.heavyImpact());
     Timer(const Duration(milliseconds: 400), () => HapticFeedback.heavyImpact());
+  }
+  
+  void _showOfflineEmergencyConfirmation() {
+    print('📱 OFFLINE EMERGENCY ACTIVATED - SMS & CALLS SENT');
+    
+    // Different vibration pattern for offline
+    HapticFeedback.mediumImpact();
+    Timer(const Duration(milliseconds: 100), () => HapticFeedback.mediumImpact());
+    Timer(const Duration(milliseconds: 200), () => HapticFeedback.heavyImpact());
   }
 }

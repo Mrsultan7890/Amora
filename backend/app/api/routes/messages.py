@@ -109,25 +109,35 @@ async def get_messages(
     
     # Get messages
     from app.core.database import Message
-    messages = db.query(Message, User).join(
-        User, Message.sender_id == User.id
-    ).filter(
+    messages = db.query(Message).filter(
         Message.match_id == match_id
     ).order_by(
         Message.created_at.asc()
     ).offset(skip).limit(limit).all()
     
+    print(f"Loading messages for match {match_id}: Found {len(messages)} messages")
+    for msg in messages:
+        print(f"Message: {msg.content[:50]}... Type: {msg.message_type} Sender: {msg.sender_id}")
+    
     # Mark messages as read
-    from app.core.database import Message as MessageModel
-    db.query(MessageModel).filter(
-        MessageModel.match_id == match_id,
-        MessageModel.sender_id != current_user.id,
-        MessageModel.is_read == False
+    db.query(Message).filter(
+        Message.match_id == match_id,
+        Message.sender_id != current_user.id,
+        Message.is_read == False
     ).update({"is_read": True})
     db.commit()
     
-    return [
-        MessageResponse(
+    result = []
+    for msg in messages:
+        # Handle system messages
+        if msg.sender_id == "system":
+            sender_name = "System"
+        else:
+            # Get sender user
+            sender = db.query(User).filter(User.id == msg.sender_id).first()
+            sender_name = sender.name if sender else "Unknown"
+        
+        result.append(MessageResponse(
             id=str(msg.id),
             match_id=str(msg.match_id),
             sender_id=str(msg.sender_id),
@@ -136,10 +146,10 @@ async def get_messages(
             image_url=msg.image_url,
             is_read=msg.is_read,
             created_at=msg.created_at,
-            sender_name=user.name
-        )
-        for msg, user in messages
-    ]
+            sender_name=sender_name
+        ))
+    
+    return result
 
 @router.post("/{match_id}/typing")
 async def send_typing_indicator(

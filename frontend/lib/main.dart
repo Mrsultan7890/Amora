@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'core/services/api_service.dart';
 import 'core/services/location_service.dart';
 import 'core/services/emergency_service.dart';
+import 'core/services/offline_emergency_service.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/splash_page.dart';
 import 'features/auth/presentation/pages/onboarding_page.dart';
@@ -38,6 +39,11 @@ void main() async {
     print('Initializing emergency service...');
     await EmergencyService.instance.initialize();
     print('Emergency service initialized');
+    
+    // Initialize offline emergency service
+    print('Initializing offline emergency service...');
+    await OfflineEmergencyService.instance.initialize();
+    print('Offline emergency service initialized');
   } catch (e) {
     print('Service initialization error: $e');
   }

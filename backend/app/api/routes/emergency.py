@@ -31,26 +31,29 @@ async def send_emergency_alert(
             Match.is_active == True
         ).all()
         
+        print(f"Found {len(matches)} matches for user {current_user.name}")
+        
         alert_count = 0
+        location_text = ""
+        if alert_data.latitude and alert_data.longitude:
+            location_text = f" at location {alert_data.latitude:.6f}, {alert_data.longitude:.6f}"
         
+        # Create emergency message in ALL matches
         for match in matches:
-            # Get the other user in the match
-            other_user_id = match.user2_id if match.user1_id == current_user.id else match.user1_id
-            other_user = db.query(User).filter(User.id == other_user_id).first()
+            print(f"Creating emergency message for match {match.id}")
             
-            if other_user:
-                # Create emergency notification
-                await _create_emergency_notification(
-                    db=db,
-                    user_id=other_user.id,
-                    sender_id=current_user.id,
-                    sender_name=current_user.name,
-                    latitude=alert_data.latitude,
-                    longitude=alert_data.longitude,
-                    timestamp=alert_data.timestamp
-                )
-                alert_count += 1
+            emergency_message = Message(
+                match_id=match.id,
+                sender_id="system",
+                content=f"🚨 EMERGENCY ALERT: {current_user.name} needs help{location_text}. Please check on them immediately!",
+                message_type="emergency",
+                is_read=False
+            )
+            
+            db.add(emergency_message)
+            alert_count += 1
         
+        db.commit()
         print(f"Emergency alert sent to {alert_count} matches for user {current_user.name}")
         
         return {
@@ -86,6 +89,7 @@ async def _create_emergency_notification(
     ).first()
     
     if match:
+        print(f"Creating emergency message for match {match.id}")
         # Create emergency message
         emergency_message = Message(
             match_id=match.id,
@@ -99,8 +103,8 @@ async def _create_emergency_notification(
         db.commit()
         
         print(f"Emergency message saved to database for match {match.id}")
-    
-    return True
+    else:
+        print(f"No match found between {sender_id} and {user_id}")
 
 @router.get("/test")
 async def test_emergency():

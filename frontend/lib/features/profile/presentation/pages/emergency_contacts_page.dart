@@ -1,0 +1,456 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:uuid/uuid.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/offline_emergency_service.dart';
+import '../../../../shared/models/emergency_contact_model.dart';
+
+class EmergencyContactsPage extends StatefulWidget {
+  const EmergencyContactsPage({super.key});
+
+  @override
+  State<EmergencyContactsPage> createState() => _EmergencyContactsPageState();
+}
+
+class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
+  final OfflineEmergencyService _emergencyService = OfflineEmergencyService.instance;
+  List<EmergencyContact> _contacts = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContacts();
+  }
+
+  Future<void> _loadContacts() async {
+    setState(() => _isLoading = true);
+    await _emergencyService.initialize();
+    setState(() {
+      _contacts = _emergencyService.contacts;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AmoraTheme.backgroundGradient,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.arrow_back_ios,
+                        color: AmoraTheme.deepMidnight,
+                      ),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Emergency Contacts',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AmoraTheme.deepMidnight,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _addContact,
+                      icon: const Icon(
+                        Icons.add,
+                        color: AmoraTheme.sunsetRose,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Info card
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: AmoraTheme.glassmorphism(
+                  color: Colors.red.shade50,
+                  borderRadius: 12,
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.warning,
+                          color: Colors.red.shade600,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Emergency Contacts',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'These contacts will receive SMS and calls during emergency situations, even without internet.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate()
+                .fadeIn(duration: 600.ms)
+                .slideY(begin: 0.3, end: 0),
+
+              // Contacts list
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AmoraTheme.sunsetRose,
+                          ),
+                        ),
+                      )
+                    : _contacts.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.contacts,
+                                  size: 64,
+                                  color: Colors.grey.shade400,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No emergency contacts',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Add contacts for emergency situations',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _contacts.length,
+                            itemBuilder: (context, index) {
+                              final contact = _contacts[index];
+                              return _buildContactCard(contact, index);
+                            },
+                          ),
+              ),
+
+              // Test button
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _testEmergencySystem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Test Emergency System',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactCard(EmergencyContact contact, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: AmoraTheme.glassmorphism(
+        color: Colors.white,
+        borderRadius: 12,
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: CircleAvatar(
+          backgroundColor: _getContactColor(contact.type),
+          child: Icon(
+            _getContactIcon(contact.type),
+            color: Colors.white,
+          ),
+        ),
+        title: Text(
+          contact.name,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AmoraTheme.deepMidnight,
+          ),
+        ),
+        subtitle: Text(
+          contact.phoneNumber,
+          style: TextStyle(
+            fontSize: 14,
+            color: AmoraTheme.deepMidnight.withOpacity(0.7),
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Switch(
+              value: contact.isEnabled,
+              onChanged: (value) => _toggleContact(contact, value),
+              activeColor: AmoraTheme.sunsetRose,
+            ),
+            PopupMenuButton(
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Text('Edit'),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Delete'),
+                ),
+              ],
+              onSelected: (value) {
+                if (value == 'edit') {
+                  _editContact(contact);
+                } else if (value == 'delete') {
+                  _deleteContact(contact);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    ).animate()
+      .fadeIn(delay: (index * 100).ms, duration: 600.ms)
+      .slideX(begin: 0.3, end: 0);
+  }
+
+  Color _getContactColor(EmergencyContactType type) {
+    switch (type) {
+      case EmergencyContactType.police:
+        return Colors.blue;
+      case EmergencyContactType.ambulance:
+        return Colors.red;
+      case EmergencyContactType.family:
+        return Colors.green;
+      case EmergencyContactType.friend:
+        return Colors.orange;
+      case EmergencyContactType.personal:
+        return Colors.purple;
+    }
+  }
+
+  IconData _getContactIcon(EmergencyContactType type) {
+    switch (type) {
+      case EmergencyContactType.police:
+        return Icons.local_police;
+      case EmergencyContactType.ambulance:
+        return Icons.local_hospital;
+      case EmergencyContactType.family:
+        return Icons.family_restroom;
+      case EmergencyContactType.friend:
+        return Icons.people;
+      case EmergencyContactType.personal:
+        return Icons.person;
+    }
+  }
+
+  void _addContact() {
+    _showContactDialog();
+  }
+
+  void _editContact(EmergencyContact contact) {
+    _showContactDialog(contact: contact);
+  }
+
+  void _showContactDialog({EmergencyContact? contact}) {
+    final nameController = TextEditingController(text: contact?.name ?? '');
+    final phoneController = TextEditingController(text: contact?.phoneNumber ?? '');
+    EmergencyContactType selectedType = contact?.type ?? EmergencyContactType.personal;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(contact == null ? 'Add Contact' : 'Edit Contact'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<EmergencyContactType>(
+                value: selectedType,
+                decoration: const InputDecoration(
+                  labelText: 'Type',
+                  border: OutlineInputBorder(),
+                ),
+                items: EmergencyContactType.values.map((type) {
+                  return DropdownMenuItem(
+                    value: type,
+                    child: Text(_getTypeDisplayName(type)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setDialogState(() {
+                      selectedType = value;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty && phoneController.text.isNotEmpty) {
+                  final newContact = EmergencyContact(
+                    id: contact?.id ?? const Uuid().v4(),
+                    name: nameController.text,
+                    phoneNumber: phoneController.text,
+                    type: selectedType,
+                    isEnabled: contact?.isEnabled ?? true,
+                  );
+
+                  if (contact == null) {
+                    _emergencyService.addContact(newContact);
+                  } else {
+                    _emergencyService.updateContact(newContact);
+                  }
+
+                  _loadContacts();
+                  Navigator.pop(context);
+                }
+              },
+              child: Text(contact == null ? 'Add' : 'Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getTypeDisplayName(EmergencyContactType type) {
+    switch (type) {
+      case EmergencyContactType.police:
+        return '🚔 Police';
+      case EmergencyContactType.ambulance:
+        return '🚑 Ambulance';
+      case EmergencyContactType.family:
+        return '👨👩👧👦 Family';
+      case EmergencyContactType.friend:
+        return '👥 Friend';
+      case EmergencyContactType.personal:
+        return '📞 Personal';
+    }
+  }
+
+  void _toggleContact(EmergencyContact contact, bool enabled) async {
+    final updatedContact = contact.copyWith(isEnabled: enabled);
+    await _emergencyService.updateContact(updatedContact);
+    _loadContacts();
+  }
+
+  void _deleteContact(EmergencyContact contact) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Contact'),
+        content: Text('Are you sure you want to delete ${contact.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _emergencyService.removeContact(contact.id);
+              _loadContacts();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _testEmergencySystem() async {
+    final isWorking = await _emergencyService.testEmergencySystem();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isWorking 
+                ? '✅ Emergency system is ready!'
+                : '❌ Emergency system needs setup',
+          ),
+          backgroundColor: isWorking ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+}

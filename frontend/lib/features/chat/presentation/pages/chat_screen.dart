@@ -569,37 +569,58 @@ class _ChatScreenState extends State<ChatScreen> {
   }
   
   Future<void> _openLocationInMap(double latitude, double longitude) async {
-    // Try Google Maps first (most common)
-    final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+    // Try different map URLs in order of preference
+    final mapUrls = [
+      // Google Maps (works on all platforms)
+      'https://maps.google.com/?q=$latitude,$longitude',
+      // Alternative Google Maps URL
+      'https://www.google.com/maps/@$latitude,$longitude,15z',
+      // OpenStreetMap (web fallback)
+      'https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude&zoom=15',
+    ];
     
-    try {
-      final uri = Uri.parse(googleMapsUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return;
+    for (String mapUrl in mapUrls) {
+      try {
+        final uri = Uri.parse(mapUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } catch (e) {
+        print('Failed to open $mapUrl: $e');
+        continue;
       }
-    } catch (e) {
-      print('Failed to open Google Maps: $e');
     }
     
-    // Fallback to Apple Maps (iOS)
-    try {
-      final appleMapsUrl = 'https://maps.apple.com/?q=$latitude,$longitude';
-      final uri = Uri.parse(appleMapsUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return;
-      }
-    } catch (e) {
-      print('Failed to open Apple Maps: $e');
-    }
-    
-    // Show error if no map app available
+    // If all map URLs fail, show coordinates in a dialog
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No map application available'),
-          backgroundColor: Colors.red,
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('📍 Emergency Location'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Location coordinates:'),
+              const SizedBox(height: 8),
+              SelectableText(
+                'Latitude: $latitude\nLongitude: $longitude',
+                style: const TextStyle(fontFamily: 'monospace'),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Copy these coordinates and paste in any map app.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
     }

@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/emergency_service.dart';
+import 'emergency_contacts_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -264,6 +265,15 @@ class _SettingsPageState extends State<SettingsPage> {
                       _buildSectionHeader('Account'),
                       
                       _buildSettingsCard([
+                        _buildActionSetting(
+                          'Emergency Contacts',
+                          'Manage offline emergency contacts',
+                          Icons.contact_emergency,
+                          () => _showEmergencyContactsPage(),
+                        ),
+                        
+                        const Divider(height: 1),
+                        
                         _buildActionSetting(
                           'Blocked Users',
                           'Manage blocked profiles',
@@ -723,6 +733,15 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           );
         },
+      ),
+    );
+  }
+  
+  void _showEmergencyContactsPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EmergencyContactsPage(),
       ),
     );
   }
