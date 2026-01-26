@@ -49,6 +49,31 @@ async def get_user_profile(
     
     return UserResponse.model_validate(user)
 
+@router.get("/likes")
+async def get_user_likes(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from app.core.database import Swipe
+    
+    # Get users who liked current user
+    likes = db.query(Swipe).filter(
+        Swipe.swiped_id == current_user.id,
+        Swipe.is_like == True
+    ).all()
+    
+    result = []
+    for like in likes:
+        user = db.query(User).filter(User.id == like.swiper_id).first()
+        if user:
+            result.append({
+                'user': UserResponse.model_validate(user),
+                'created_at': like.created_at,
+                'is_super_like': like.is_super_like
+            })
+    
+    return result
+
 @router.get("/profile")
 async def get_profile(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user)

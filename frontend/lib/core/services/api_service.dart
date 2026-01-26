@@ -243,6 +243,15 @@ class ApiService {
     }
   }
   
+  Future<List<Map<String, dynamic>>> getUserLikes() async {
+    try {
+      final response = await _dio.get('/users/likes');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
   // Message Methods
   Future<MessageModel> sendMessage({
     required String matchId,

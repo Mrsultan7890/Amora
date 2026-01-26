@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../shared/models/user_model.dart';
+import '../../../../shared/models/match_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -15,25 +16,34 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin {
   final ApiService _apiService = ApiService.instance;
+  late TabController _tabController;
   UserModel? _currentUser;
+  List<Map<String, dynamic>> _likes = [];
+  List<MatchModel> _matches = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadUserData();
   }
 
   Future<void> _loadUserData() async {
     try {
       final user = await _apiService.getCurrentUser();
+      final likes = await _apiService.getUserLikes();
+      final matches = await _apiService.getMatches();
+      
       setState(() {
         _currentUser = user;
+        _likes = likes;
+        _matches = matches;
         _isLoading = false;
       });
-      print('Profile loaded: ${user.photos.length} photos');
+      print('Profile loaded: ${user.photos.length} photos, ${likes.length} likes, ${matches.length} matches');
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -228,8 +238,8 @@ class _ProfilePageState extends State<ProfilePage> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _buildStatItem('Photos', '${_currentUser!.photos.length}'),
-                                _buildStatItem('Matches', '12'),
-                                _buildStatItem('Likes', '48'),
+                                _buildStatItem('Matches', '${_matches.length}'),
+                                _buildStatItem('Likes', '${_likes.length}'),
                               ],
                             ).animate()
                               .fadeIn(delay: 600.ms, duration: 800.ms),
@@ -328,6 +338,44 @@ class _ProfilePageState extends State<ProfilePage> {
                         .fadeIn(delay: 1000.ms, duration: 800.ms),
                       
                       const SizedBox(height: 24),
+                      
+                      // Tabs
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          indicator: BoxDecoration(
+                            gradient: AmoraTheme.primaryGradient,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          labelColor: Colors.white,
+                          unselectedLabelColor: AmoraTheme.deepMidnight,
+                          tabs: const [
+                            Tab(text: 'Photos'),
+                            Tab(text: 'Matches'),
+                            Tab(text: 'Likes'),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Tab Content
+                      SizedBox(
+                        height: 300,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildPhotosTab(),
+                            _buildMatchesTab(),
+                            _buildLikesTab(),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -409,6 +457,135 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ],
     );
+  }
+
+  Widget _buildPhotosTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: _currentUser!.photos.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.photo_library, size: 48, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('No photos uploaded yet'),
+                  Text('Add up to 6 photos to your profile'),
+                ],
+              ),
+            )
+          : GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: _currentUser!.photos.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: NetworkImage(_currentUser!.photos[index]),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildMatchesTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: _matches.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.favorite, size: 48, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('No matches yet'),
+                  Text('Start swiping to find matches'),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: _matches.length,
+              itemBuilder: (context, index) {
+                final match = _matches[index];
+                return ListTile(
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.person),
+                  ),
+                  title: Text(match.otherUser?.name ?? 'Unknown'),
+                  subtitle: Text('Matched ${_formatDate(match.createdAt)}'),
+                  trailing: const Icon(Icons.chat),
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildLikesTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: _likes.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.thumb_up, size: 48, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('No likes yet'),
+                  Text('Keep swiping to get more likes'),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: _likes.length,
+              itemBuilder: (context, index) {
+                final like = _likes[index];
+                final user = UserModel.fromJson(like['user']);
+                return ListTile(
+                  leading: Stack(
+                    children: [
+                      const CircleAvatar(
+                        child: Icon(Icons.person),
+                      ),
+                      if (like['is_super_like'] == true)
+                        const Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                            size: 16,
+                          ),
+                        ),
+                    ],
+                  ),
+                  title: Text(user.name),
+                  subtitle: Text('Liked you ${_formatDate(DateTime.parse(like['created_at']))}'),
+                  trailing: const Icon(Icons.favorite, color: Colors.red),
+                );
+              },
+            ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${difference.inMinutes}m ago';
+    }
   }
 
   Widget _buildActionButton({
@@ -534,5 +711,11 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 }
