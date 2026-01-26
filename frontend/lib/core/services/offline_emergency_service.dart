@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import 'dart:convert';
-import '../location_service.dart';
+import 'location_service.dart';
 import '../../shared/models/emergency_contact_model.dart';
 
 class OfflineEmergencyService {
