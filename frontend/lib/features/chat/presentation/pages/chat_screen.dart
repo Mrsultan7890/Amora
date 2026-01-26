@@ -458,8 +458,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final locationMatch = RegExp(r'location (-?\d+\.\d+), (-?\d+\.\d+)')
         .firstMatch(message.content);
     final hasLocation = locationMatch != null;
-    final latitude = hasLocation ? double.parse(locationMatch!.group(1)!) : null;
-    final longitude = hasLocation ? double.parse(locationMatch!.group(2)!) : null;
+    final latitude = hasLocation ? double.tryParse(locationMatch!.group(1)!) : null;
+    final longitude = hasLocation ? double.tryParse(locationMatch!.group(2)!) : null;
     
     return Container(
       width: double.infinity,
@@ -501,10 +501,10 @@ class _ChatScreenState extends State<ChatScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          if (hasLocation) ...[
+          if (hasLocation && latitude != null && longitude != null) ...[
             const SizedBox(height: 12),
             GestureDetector(
-              onTap: () => _openLocationInMap(latitude!, longitude!),
+              onTap: () => _openLocationInMap(latitude, longitude),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
