@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_emergency_service.dart';
+import '../../../../core/services/emergency_service.dart';
 import '../../../../core/services/sms_service.dart';
 import '../../../../shared/models/emergency_contact_model.dart';
 
@@ -143,6 +144,10 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                       value: _emergencyService.isEnabled,
                       onChanged: (value) async {
                         await _emergencyService.setEnabled(value);
+                        // Also update emergency service
+                        final EmergencyService emergencyService = EmergencyService.instance;
+                        await emergencyService.setEmergencyEnabled(value);
+                        
                         setState(() {});
                         
                         if (mounted) {
@@ -321,41 +326,24 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                         ),
                       )
                     : _contacts.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.contacts,
-                                  size: 64,
-                                  color: Colors.grey.shade400,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No emergency contacts',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Add contacts for emergency situations',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ),
-                              ],
+                        ? const Center(
+                            child: Text(
+                              'Loading contacts...',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
                             ),
                           )
-                        : ListView.builder(
+                        : SingleChildScrollView(
                             padding: const EdgeInsets.all(16),
-                            itemCount: _contacts.length,
-                            itemBuilder: (context, index) {
-                              final contact = _contacts[index];
-                              return _buildContactCard(contact, index);
-                            },
+                            child: Column(
+                              children: _contacts.asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final contact = entry.value;
+                                return _buildContactCard(contact, index);
+                              }).toList(),
+                            ),
                           ),
               ),
 
