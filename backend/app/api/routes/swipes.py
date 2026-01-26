@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.core.database import get_db, User, Swipe
+from app.core.database import get_db, Swipe, Match
+from app.models.user import User
 from app.api.routes.auth import get_current_user
 from pydantic import BaseModel
 from typing import List
@@ -25,19 +26,26 @@ async def create_swipe(
         Swipe.swiped_id == swipe_data.swiped_user_id
     ).first()
     
+    # For testing - allow re-swiping by commenting out this check
+    # if existing_swipe:
+    #     raise HTTPException(status_code=400, detail="Already swiped on this user")
+    
+    # If already swiped, update the swipe instead
     if existing_swipe:
-        raise HTTPException(status_code=400, detail="Already swiped on this user")
-    
-    # Create swipe
-    swipe = Swipe(
-        swiper_id=current_user.id,
-        swiped_id=swipe_data.swiped_user_id,
-        is_like=swipe_data.is_like,
-        is_super_like=swipe_data.is_super_like
-    )
-    
-    db.add(swipe)
-    db.commit()
+        existing_swipe.is_like = swipe_data.is_like
+        existing_swipe.is_super_like = swipe_data.is_super_like
+        db.commit()
+        swipe = existing_swipe
+    else:
+        # Create new swipe
+        swipe = Swipe(
+            swiper_id=current_user.id,
+            swiped_id=swipe_data.swiped_user_id,
+            is_like=swipe_data.is_like,
+            is_super_like=swipe_data.is_super_like
+        )
+        db.add(swipe)
+        db.commit()
     
     # Check for match if it's a like
     is_match = False
@@ -51,7 +59,6 @@ async def create_swipe(
         if reverse_swipe:
             is_match = True
             # Create match
-            from app.core.database import Match
             match = Match(
                 user1_id=current_user.id,
                 user2_id=swipe_data.swiped_user_id
@@ -86,7 +93,7 @@ async def discover_users(
         User.id != current_user.id
     )
     
-    # For testing - comment out swipe filter temporarily
+    # For testing - show all users (comment out swipe filter)
     # if swiped_user_ids:
     #     users_query = users_query.filter(~User.id.in_(swiped_user_ids))
     

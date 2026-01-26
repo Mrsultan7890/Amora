@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../shared/models/match_model.dart';
+import 'chat_screen.dart';
 
 class MatchesPage extends StatefulWidget {
   const MatchesPage({super.key});
@@ -13,13 +15,16 @@ class MatchesPage extends StatefulWidget {
 
 class _MatchesPageState extends State<MatchesPage> {
   final ApiService _apiService = ApiService.instance;
+  final TextEditingController _searchController = TextEditingController();
   List<MatchModel> _matches = [];
+  List<MatchModel> _filteredMatches = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadMatches();
+    _searchController.addListener(_filterMatches);
   }
 
   Future<void> _loadMatches() async {
@@ -31,6 +36,7 @@ class _MatchesPageState extends State<MatchesPage> {
       final matches = await _apiService.getMatches();
       setState(() {
         _matches = matches;
+        _filteredMatches = matches;
         _isLoading = false;
       });
     } catch (e) {
@@ -38,6 +44,16 @@ class _MatchesPageState extends State<MatchesPage> {
         _isLoading = false;
       });
     }
+  }
+
+  void _filterMatches() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredMatches = _matches.where((match) {
+        final userName = match.otherUser?.name?.toLowerCase() ?? '';
+        return userName.contains(query);
+      }).toList();
+    });
   }
 
   @override
@@ -56,15 +72,23 @@ class _MatchesPageState extends State<MatchesPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: AmoraTheme.glassmorphism(
-                        color: Colors.white,
-                        borderRadius: 16,
-                      ),
-                      child: const Icon(
-                        Icons.search,
-                        color: AmoraTheme.deepMidnight,
+                    GestureDetector(
+                      onTap: () {
+                        showSearch(
+                          context: context,
+                          delegate: MatchSearchDelegate(_matches),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: AmoraTheme.glassmorphism(
+                          color: Colors.white,
+                          borderRadius: 16,
+                        ),
+                        child: const Icon(
+                          Icons.search,
+                          color: AmoraTheme.deepMidnight,
+                        ),
                       ),
                     ),
                     
@@ -102,7 +126,37 @@ class _MatchesPageState extends State<MatchesPage> {
                           ),
                         ),
                       )
-                    : _matches.isEmpty
+                    : _filteredMatches.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.search_off,
+                                  size: 64,
+                                  color: AmoraTheme.sunsetRose,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'No matches found',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    color: AmoraTheme.deepMidnight,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Try adjusting your search',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: AmoraTheme.deepMidnight.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : _matches.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -134,9 +188,9 @@ class _MatchesPageState extends State<MatchesPage> {
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: _matches.length,
+                            itemCount: _filteredMatches.length,
                             itemBuilder: (context, index) {
-                              final match = _matches[index];
+                              final match = _filteredMatches[index];
                               return _buildMatchCard(match, index);
                             },
                           ),
@@ -184,7 +238,7 @@ class _MatchesPageState extends State<MatchesPage> {
         title: Row(
           children: [
             Text(
-              'Match ${match.id.substring(0, 8)}',
+              match.otherUser?.name ?? 'Unknown User',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -248,6 +302,15 @@ class _MatchesPageState extends State<MatchesPage> {
       .slideX(begin: 0.3, end: 0);
   }
 
+  void _openChat(MatchModel match) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(match: match),
+      ),
+    );
+  }
+
   String _getTimeText(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
@@ -265,169 +328,118 @@ class _MatchesPageState extends State<MatchesPage> {
     }
   }
 
-  void _openChat(MatchModel match) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(24),
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+}
+
+class MatchSearchDelegate extends SearchDelegate<MatchModel?> {
+  final List<MatchModel> matches;
+
+  MatchSearchDelegate(this.matches);
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        onPressed: () {
+          query = '';
+        },
+        icon: const Icon(Icons.clear),
+      ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        close(context, null);
+      },
+      icon: const Icon(Icons.arrow_back),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return _buildSearchResults();
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return _buildSearchResults();
+  }
+
+  Widget _buildSearchResults() {
+    final filteredMatches = matches.where((match) {
+      final userName = match.otherUser?.name?.toLowerCase() ?? '';
+      return userName.contains(query.toLowerCase());
+    }).toList();
+
+    if (filteredMatches.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: AmoraTheme.sunsetRose,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No matches found',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AmoraTheme.deepMidnight,
               ),
             ),
-            child: Column(
-              children: [
-                // Handle
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                
-                // Chat header
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.withOpacity(0.2),
-                      ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 20,
-                        child: Icon(Icons.person),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Match ${match.id.substring(0, 8)}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Text(
-                              'Online',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.green,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Chat messages
-                Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.chat_bubble_outline,
-                          size: 48,
-                          color: AmoraTheme.sunsetRose,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Start a conversation',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: AmoraTheme.deepMidnight,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Say something nice!',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AmoraTheme.deepMidnight.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // Message input
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: Colors.grey.withOpacity(0.2),
-                      ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: const TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Type a message...',
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: AmoraTheme.primaryGradient,
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          onPressed: () {
-                            // Send message functionality
-                          },
-                          icon: const Icon(
-                            Icons.send,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: filteredMatches.length,
+      itemBuilder: (context, index) {
+        final match = filteredMatches[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: AmoraTheme.glassmorphism(
+            color: Colors.white,
+            borderRadius: 16,
+          ),
+          child: ListTile(
+            leading: const CircleAvatar(
+              child: Icon(Icons.person),
             ),
-          );
-        },
-      ),
+            title: Text(
+              match.otherUser?.name ?? 'Unknown User',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              match.lastMessage ?? 'Say hello!',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () {
+              close(context, match);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(match: match),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

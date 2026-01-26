@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.core.database import get_db, User
+from app.core.database import get_db
+from app.models.user import User
 from app.api.routes.auth import get_current_user, UserResponse
 from pydantic import BaseModel
 from typing import List, Optional
@@ -16,6 +17,20 @@ class ProfileUpdateRequest(BaseModel):
     interests: Optional[List[str]] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+
+@router.get("/search")
+async def search_users(
+    query: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    users = db.query(User).filter(
+        User.id != current_user.id,
+        User.is_active == True,
+        User.name.ilike(f"%{query}%")
+    ).limit(20).all()
+    
+    return [UserResponse.model_validate(user) for user in users]
 
 @router.get("/profile")
 async def get_profile(current_user: User = Depends(get_current_user)):

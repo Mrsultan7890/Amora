@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'user_model.dart';
 
 class MatchModel extends Equatable {
   final String id;
@@ -8,6 +9,7 @@ class MatchModel extends Equatable {
   final DateTime lastMessageAt;
   final String? lastMessage;
   final bool isActive;
+  final UserModel? otherUser;
 
   const MatchModel({
     required this.id,
@@ -17,6 +19,7 @@ class MatchModel extends Equatable {
     required this.lastMessageAt,
     this.lastMessage,
     this.isActive = true,
+    this.otherUser,
   });
 
   MatchModel copyWith({
@@ -27,6 +30,7 @@ class MatchModel extends Equatable {
     DateTime? lastMessageAt,
     String? lastMessage,
     bool? isActive,
+    UserModel? otherUser,
   }) {
     return MatchModel(
       id: id ?? this.id,
@@ -36,6 +40,7 @@ class MatchModel extends Equatable {
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
       lastMessage: lastMessage ?? this.lastMessage,
       isActive: isActive ?? this.isActive,
+      otherUser: otherUser ?? this.otherUser,
     );
   }
 
@@ -52,6 +57,7 @@ class MatchModel extends Equatable {
       'last_message_at': lastMessageAt.toIso8601String(),
       'last_message': lastMessage,
       'is_active': isActive,
+      'other_user': otherUser?.toJson(),
     };
   }
 
@@ -64,11 +70,14 @@ class MatchModel extends Equatable {
       lastMessageAt: DateTime.parse(json['last_message_at']),
       lastMessage: json['last_message'],
       isActive: json['is_active'] ?? true,
+      otherUser: json['other_user'] != null 
+          ? UserModel.fromJson(json['other_user']) 
+          : null,
     );
   }
 
   @override
   List<Object?> get props => [
-    id, user1Id, user2Id, createdAt, lastMessageAt, lastMessage, isActive,
+    id, user1Id, user2Id, createdAt, lastMessageAt, lastMessage, isActive, otherUser,
   ];
 }

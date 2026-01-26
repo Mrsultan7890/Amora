@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.core.database import get_db, User, Match, Swipe
+from app.core.database import get_db, Match, Swipe
+from app.models.user import User
 from app.api.routes.auth import get_current_user, UserResponse
 from pydantic import BaseModel
 from typing import List
@@ -21,13 +22,16 @@ class MatchResponse(BaseModel):
 
 @router.get("/", response_model=List[MatchResponse])
 async def get_matches(
+    search: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    matches = db.query(Match).filter(
+    matches_query = db.query(Match).filter(
         ((Match.user1_id == current_user.id) | (Match.user2_id == current_user.id)),
         Match.is_active == True
-    ).order_by(Match.last_message_at.desc()).all()
+    )
+    
+    matches = matches_query.order_by(Match.last_message_at.desc()).all()
     
     result = []
     for match in matches:
@@ -36,6 +40,10 @@ async def get_matches(
         other_user = db.query(User).filter(User.id == other_user_id).first()
         
         if other_user:
+            # Apply search filter if provided
+            if search and search.lower() not in other_user.name.lower():
+                continue
+                
             result.append(MatchResponse(
                 id=match.id,
                 user1_id=match.user1_id,
