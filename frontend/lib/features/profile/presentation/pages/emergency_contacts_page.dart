@@ -462,10 +462,11 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                   value: 'edit',
                   child: Text('Edit'),
                 ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Delete'),
-                ),
+                if (!['police', 'ambulance'].contains(contact.id))
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Delete'),
+                  ),
               ],
               onSelected: (value) {
                 if (value == 'edit') {
@@ -629,6 +630,17 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _deleteContact(EmergencyContact contact) {
+    // Don't allow deleting default contacts
+    if (['police', 'ambulance'].contains(contact.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Cannot delete default emergency contacts'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
