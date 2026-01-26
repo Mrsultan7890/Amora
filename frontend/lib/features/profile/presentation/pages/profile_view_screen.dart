@@ -236,11 +236,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                     const SizedBox(height: 8),
 
                     // Job and education
-                    if ((_user!.job?.isNotEmpty ?? false) || (_user!.education?.isNotEmpty ?? false))
+                    if ((_user!.job != null && _user!.job!.isNotEmpty) || (_user!.education != null && _user!.education!.isNotEmpty))
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_user!.job?.isNotEmpty ?? false)
+                          if (_user!.job != null && _user!.job!.isNotEmpty)
                             Row(
                               children: [
                                 const Icon(
@@ -250,7 +250,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  _user!.job ?? '',
+                                  _user!.job!,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     color: Colors.white70,
@@ -258,7 +258,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ),
                               ],
                             ),
-                          if (_user!.education?.isNotEmpty ?? false)
+                          if (_user!.education != null && _user!.education!.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Row(
@@ -270,7 +270,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    _user!.education ?? '',
+                                    _user!.education!,
                                     style: const TextStyle(
                                       fontSize: 16,
                                       color: Colors.white70,
@@ -282,14 +282,23 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           const SizedBox(height: 12),
                         ],
                       ),
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
 
                     // Bio
-                    if (_user!.bio?.isNotEmpty ?? false)
+                    if (_user!.bio != null && _user!.bio!.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _user!.bio ?? '',
+                            _user!.bio!,
                             style: const TextStyle(
                               fontSize: 16,
                               color: Colors.white,
