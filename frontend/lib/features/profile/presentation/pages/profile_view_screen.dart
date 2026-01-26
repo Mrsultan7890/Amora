@@ -236,12 +236,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                     const SizedBox(height: 8),
 
                     // Job and education
-                    if ((_user!.job != null && _user!.job!.isNotEmpty) || 
-                        (_user!.education != null && _user!.education!.isNotEmpty))
+                    if ((_user!.job?.isNotEmpty == true) || 
+                        (_user!.education?.isNotEmpty == true))
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_user!.job != null && _user!.job!.isNotEmpty)
+                          if (_user!.job?.isNotEmpty == true)
                             Row(
                               children: [
                                 const Icon(
@@ -259,7 +259,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ),
                               ],
                             ),
-                          if (_user!.education != null && _user!.education!.isNotEmpty)
+                          if (_user!.education?.isNotEmpty == true)
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Row(
@@ -283,14 +283,24 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           const SizedBox(height: 12),
                         ],
                       ),
+                                      fontSize: 16,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
 
                     // Bio
-                    if (_user!.bio != null && _user!.bio!.isNotEmpty)
+                    if (_user!.bio.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _user!.bio!,
+                            _user!.bio,
                             style: const TextStyle(
                               fontSize: 16,
                               color: Colors.white,
