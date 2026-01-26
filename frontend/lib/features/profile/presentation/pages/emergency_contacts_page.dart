@@ -652,6 +652,36 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     );
   }
 
+  void _requestSpecificPermission(String permissionType) async {
+    switch (permissionType) {
+      case 'SMS':
+        await Permission.sms.request();
+        break;
+      case 'Phone':
+        await Permission.phone.request();
+        break;
+      case 'Location':
+        await Permission.location.request();
+        break;
+      case 'Battery Optimization':
+      case 'Display Over Apps':
+        await SmsService.requestSpecialPermissions();
+        break;
+    }
+    
+    await Future.delayed(const Duration(seconds: 1));
+    await _checkPermissions();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$permissionType permission requested'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   void _testEmergencySystem() async {
     // Check special permissions first
     final hasSpecialPermissions = await SmsService.checkPermissions();
