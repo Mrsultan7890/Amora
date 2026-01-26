@@ -16,6 +16,8 @@
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.CALL_PRIVILEGED" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     
     <!-- Features -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -87,15 +89,6 @@
         </intent>
         <intent>
             <action android:name="android.intent.action.GET_CONTENT" />
-        </intent>
-        <!-- SMS and Call intents -->
-        <intent>
-            <action android:name="android.intent.action.SENDTO" />
-            <data android:scheme="sms" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.CALL" />
-            <data android:scheme="tel" />
         </intent>
     </queries>
 </manifest>

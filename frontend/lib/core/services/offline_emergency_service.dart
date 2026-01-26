@@ -1,10 +1,10 @@
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'location_service.dart';
+import 'sms_service.dart';
 import '../../shared/models/emergency_contact_model.dart';
 
 class OfflineEmergencyService {
@@ -140,44 +140,20 @@ class OfflineEmergencyService {
   Future<void> _sendEmergencySMS(double? latitude, double? longitude) async {
     final enabledContacts = _contacts.where((c) => c.isEnabled).toList();
     
-    if (enabledContacts.isEmpty) {
-      return;
-    }
+    if (enabledContacts.isEmpty) return;
     
     String locationText = '';
     if (latitude != null && longitude != null) {
-      locationText = '\nLocation: $latitude, $longitude\nMaps: https://maps.google.com/?q=$latitude,$longitude';
+      locationText = '\nLocation: https://maps.google.com/?q=$latitude,$longitude';
     }
     
     final message = 'EMERGENCY ALERT\nI need immediate help!$locationText\nTime: ${DateTime.now().toString().substring(0, 19)}\n- Amora Emergency';
     
+    // Send automatic SMS to all contacts
     for (final contact in enabledContacts) {
       try {
-        // Try SENDTO first (more reliable)
-        final sendtoUri = Uri(
-          scheme: 'sms',
-          path: contact.phoneNumber,
-          queryParameters: {'body': message},
-        );
-        
-        bool launched = false;
-        if (await canLaunchUrl(sendtoUri)) {
-          launched = await launchUrl(
-            sendtoUri,
-            mode: LaunchMode.externalApplication,
-          );
-        }
-        
-        if (!launched) {
-          // Fallback: try with different scheme
-          final fallbackUri = Uri.parse('sms:${contact.phoneNumber}?body=${Uri.encodeComponent(message)}');
-          if (await canLaunchUrl(fallbackUri)) {
-            await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-          }
-        }
-        
-        // Small delay between SMS
-        await Future.delayed(const Duration(milliseconds: 1000));
+        await SmsService.sendSms(contact.phoneNumber, message);
+        await Future.delayed(const Duration(milliseconds: 500));
       } catch (e) {
         // Continue with next contact
       }
@@ -187,33 +163,14 @@ class OfflineEmergencyService {
   Future<void> _startEmergencyCallSequence() async {
     final enabledContacts = _contacts.where((c) => c.isEnabled).toList();
     
-    if (enabledContacts.isEmpty) {
-      return;
-    }
+    if (enabledContacts.isEmpty) return;
     
+    // Make automatic calls to all contacts
     for (final contact in enabledContacts) {
       try {
-        // Try direct call
-        final callUri = Uri(scheme: 'tel', path: contact.phoneNumber);
-        
-        bool launched = false;
-        if (await canLaunchUrl(callUri)) {
-          launched = await launchUrl(
-            callUri,
-            mode: LaunchMode.externalApplication,
-          );
-        }
-        
-        if (!launched) {
-          // Fallback: try with different format
-          final fallbackUri = Uri.parse('tel:${contact.phoneNumber}');
-          if (await canLaunchUrl(fallbackUri)) {
-            await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-          }
-        }
-        
-        // Wait 10 seconds before next call (shorter for testing)
-        await Future.delayed(const Duration(seconds: 10));
+        await SmsService.makeCall(contact.phoneNumber);
+        // Wait 3 seconds between calls
+        await Future.delayed(const Duration(seconds: 3));
       } catch (e) {
         // Continue with next contact
       }

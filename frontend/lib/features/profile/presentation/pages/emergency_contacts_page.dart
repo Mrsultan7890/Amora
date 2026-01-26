@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_emergency_service.dart';
+import '../../../../core/services/sms_service.dart';
 import '../../../../shared/models/emergency_contact_model.dart';
 
 class EmergencyContactsPage extends StatefulWidget {
@@ -465,50 +466,66 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _testEmergencySystem() async {
+    // Check special permissions first
+    final hasSpecialPermissions = await SmsService.checkPermissions();
+    
+    if (!hasSpecialPermissions) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('🚨 Emergency Setup Required'),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('For AUTOMATIC emergency alerts, you need:'),
+              SizedBox(height: 12),
+              Text('1. 📞 Phone permission'),
+              Text('2. 💬 SMS permission'),
+              Text('3. 🔋 Battery optimization OFF'),
+              Text('4. 📱 Display over other apps'),
+              Text('5. 👥 At least 1 emergency contact'),
+              SizedBox(height: 12),
+              Text('This allows shake detection to work even when phone is locked and automatically send SMS/calls without opening apps.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await SmsService.requestSpecialPermissions();
+                await _emergencyService.requestPermissions();
+                await Future.delayed(const Duration(seconds: 2));
+                _testEmergencySystem();
+              },
+              child: const Text('Setup Emergency Mode'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
     final isWorking = await _emergencyService.testEmergencySystem();
     
     if (mounted) {
       if (isWorking) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Emergency system is ready!'),
+            content: Text('✅ AUTOMATIC Emergency system is ready! Shake phone to test.'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
       } else {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('⚠️ Emergency Setup Required'),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('To use emergency system, you need:'),
-                SizedBox(height: 12),
-                Text('1. 📞 Phone permission'),
-                Text('2. 💬 SMS permission'),
-                Text('3. 📍 Location permission'),
-                Text('4. 👥 At least 1 emergency contact'),
-                SizedBox(height: 12),
-                Text('Tap "Grant Permissions" to setup.'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  await _emergencyService.requestPermissions();
-                  await Future.delayed(const Duration(seconds: 1));
-                  _testEmergencySystem();
-                },
-                child: const Text('Grant Permissions'),
-              ),
-            ],
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Setup incomplete. Please add emergency contacts.'),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -571,9 +588,9 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ Emergency alerts sent to ${_contacts.where((c) => c.isEnabled).length} contacts!'),
+              content: Text('✅ AUTOMATIC SMS sent and calls made to ${_contacts.where((c) => c.isEnabled).length} contacts! No manual action needed.'),
               backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
+              duration: const Duration(seconds: 5),
             ),
           );
         }
