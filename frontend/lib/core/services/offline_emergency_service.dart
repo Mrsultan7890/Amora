@@ -264,10 +264,31 @@ Please call or come immediately!
   }
   
   Future<void> requestPermissions() async {
-    await [
-      Permission.sms,
-      Permission.phone,
-      Permission.location,
-    ].request();
+    try {
+      print('Requesting permissions...');
+      
+      // Request SMS permission
+      final smsStatus = await Permission.sms.request();
+      print('SMS permission: $smsStatus');
+      
+      // Request Phone permission
+      final phoneStatus = await Permission.phone.request();
+      print('Phone permission: $phoneStatus');
+      
+      // Request Location permission
+      final locationStatus = await Permission.location.request();
+      print('Location permission: $locationStatus');
+      
+      // If any permission is permanently denied, open settings
+      if (smsStatus.isPermanentlyDenied || 
+          phoneStatus.isPermanentlyDenied || 
+          locationStatus.isPermanentlyDenied) {
+        print('Some permissions permanently denied, opening settings');
+        await openAppSettings();
+      }
+      
+    } catch (e) {
+      print('Error requesting permissions: $e');
+    }
   }
 }

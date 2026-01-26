@@ -7,6 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/models/match_model.dart';
+import '../../../../shared/widgets/photo_gallery_viewer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -498,12 +499,26 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               ),
               itemCount: _currentUser!.photos.length,
               itemBuilder: (context, index) {
-                return Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: NetworkImage(_currentUser!.photos[index]),
-                      fit: BoxFit.cover,
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PhotoGalleryViewer(
+                          photos: _currentUser!.photos,
+                          initialIndex: index,
+                          userName: _currentUser!.name,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      image: DecorationImage(
+                        image: NetworkImage(_currentUser!.photos[index]),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 );

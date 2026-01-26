@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../shared/models/user_model.dart';
+import '../../../../shared/widgets/photo_gallery_viewer.dart';
 
 class ProfileViewScreen extends StatefulWidget {
   final String userId;
@@ -77,39 +78,53 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     return Stack(
       children: [
         // Photo Gallery
-        PageView.builder(
-          controller: _pageController,
-          itemCount: photos.length,
-          onPageChanged: (index) {
-            setState(() {
-              _currentPhotoIndex = index;
-            });
-          },
-          itemBuilder: (context, index) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                image: photos[index].isNotEmpty
-                    ? DecorationImage(
-                        image: NetworkImage(photos[index]),
-                        fit: BoxFit.cover,
-                        onError: (error, stackTrace) {
-                          // Handle image load error
-                        },
-                      )
-                    : null,
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PhotoGalleryViewer(
+                  photos: photos,
+                  initialIndex: _currentPhotoIndex,
+                  userName: _user!.name,
+                ),
               ),
-              child: photos[index].isEmpty
-                  ? const Center(
-                      child: Icon(
-                        Icons.person,
-                        size: 120,
-                        color: Colors.white54,
-                      ),
-                    )
-                  : null,
             );
           },
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: photos.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPhotoIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  image: photos[index].isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(photos[index]),
+                          fit: BoxFit.cover,
+                          onError: (error, stackTrace) {
+                            // Handle image load error
+                          },
+                        )
+                      : null,
+                ),
+                child: photos[index].isEmpty
+                    ? const Center(
+                        child: Icon(
+                          Icons.person,
+                          size: 120,
+                          color: Colors.white54,
+                        ),
+                      )
+                    : null,
+              );
+            },
+          ),
         ),
 
         // Photo indicators

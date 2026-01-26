@@ -476,7 +476,21 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context);
+                  
+                  // Show loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Requesting permissions...'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  
+                  // Request permissions
                   await _emergencyService.requestPermissions();
+                  
+                  // Wait a bit for permissions to be processed
+                  await Future.delayed(const Duration(seconds: 1));
+                  
                   // Retest after permissions
                   _testEmergencySystem();
                 },
