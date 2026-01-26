@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../shared/models/match_model.dart';
@@ -30,6 +32,15 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadCurrentUser();
     _loadMessages();
+    
+    // Refresh messages every 5 seconds to catch emergency alerts
+    Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        _loadMessages();
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   Future<void> _loadCurrentUser() async {
@@ -373,67 +384,173 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageBubble(MessageModel message, bool isMe, int index) {
+    // Check if it's an emergency message
+    final isEmergency = message.type == MessageType.emergency || 
+                       message.senderId == 'system';
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) ...[
-            const CircleAvatar(
-              radius: 16,
-              child: Icon(Icons.person, size: 16),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: isMe ? AmoraTheme.primaryGradient : null,
-                color: isMe ? null : Colors.white,
-                borderRadius: BorderRadius.circular(20).copyWith(
-                  bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
-                  bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
-                ),
-                boxShadow: AmoraTheme.softShadow,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    message.content,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isMe ? Colors.white : AmoraTheme.deepMidnight,
+      child: isEmergency 
+          ? _buildEmergencyMessage(message, index)
+          : Row(
+              mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (!isMe) ...[
+                  const CircleAvatar(
+                    radius: 16,
+                    child: Icon(Icons.person, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: isMe ? AmoraTheme.primaryGradient : null,
+                      color: isMe ? null : Colors.white,
+                      borderRadius: BorderRadius.circular(20).copyWith(
+                        bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
+                        bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
+                      ),
+                      boxShadow: AmoraTheme.softShadow,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          message.content,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isMe ? Colors.white : AmoraTheme.deepMidnight,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatTime(message.createdAt),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isMe 
+                                ? Colors.white.withOpacity(0.7)
+                                : AmoraTheme.deepMidnight.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatTime(message.createdAt),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isMe 
-                          ? Colors.white.withOpacity(0.7)
-                          : AmoraTheme.deepMidnight.withOpacity(0.5),
-                    ),
+                ),
+                if (isMe) ...[
+                  const SizedBox(width: 8),
+                  const CircleAvatar(
+                    radius: 16,
+                    child: Icon(Icons.person, size: 16),
                   ),
                 ],
-              ),
+              ],
             ),
-          ),
-          if (isMe) ...[
-            const SizedBox(width: 8),
-            const CircleAvatar(
-              radius: 16,
-              child: Icon(Icons.person, size: 16),
-            ),
-          ],
-        ],
-      ),
     ).animate()
       .fadeIn(delay: (index * 50).ms, duration: 300.ms)
       .slideY(begin: 0.3, end: 0);
+  }
+  
+  Widget _buildEmergencyMessage(MessageModel message, int index) {
+    // Extract location from message content
+    final locationMatch = RegExp(r'location (-?\d+\.\d+), (-?\d+\.\d+)')
+        .firstMatch(message.content);
+    final hasLocation = locationMatch != null;
+    final latitude = hasLocation ? double.parse(locationMatch!.group(1)!) : null;
+    final longitude = hasLocation ? double.parse(locationMatch!.group(2)!) : null;
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        border: Border.all(color: Colors.red.shade200, width: 2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.warning,
+                color: Colors.red.shade600,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'EMERGENCY ALERT',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message.content,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.red.shade800,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (hasLocation) ...[
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => _openLocationInMap(latitude!, longitude!),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade300),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      color: Colors.red.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'View Location on Map',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.open_in_new,
+                      color: Colors.red.shade700,
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            _formatTime(message.createdAt),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.red.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatTime(DateTime dateTime) {
@@ -448,6 +565,43 @@ class _ChatScreenState extends State<ChatScreen> {
       return '${difference.inHours}h';
     } else {
       return '${dateTime.day}/${dateTime.month}';
+    }
+  }
+  
+  Future<void> _openLocationInMap(double latitude, double longitude) async {
+    // Try Google Maps first (most common)
+    final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+    
+    try {
+      final uri = Uri.parse(googleMapsUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (e) {
+      print('Failed to open Google Maps: $e');
+    }
+    
+    // Fallback to Apple Maps (iOS)
+    try {
+      final appleMapsUrl = 'https://maps.apple.com/?q=$latitude,$longitude';
+      final uri = Uri.parse(appleMapsUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (e) {
+      print('Failed to open Apple Maps: $e');
+    }
+    
+    // Show error if no map app available
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No map application available'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

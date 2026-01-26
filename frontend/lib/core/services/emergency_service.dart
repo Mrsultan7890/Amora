@@ -90,15 +90,19 @@ class EmergencyService {
       final location = await LocationService.instance.getCurrentLocation();
       
       // Send emergency alert to all matches
-      await ApiService.instance.sendEmergencyAlert(
+      final result = await ApiService.instance.sendEmergencyAlert(
         latitude: location?.latitude,
         longitude: location?.longitude,
       );
       
-      print('Emergency alert sent successfully');
+      print('Emergency alert sent successfully: $result');
+      
+      // Show success notification to user
+      _showEmergencyConfirmation(result);
       
     } catch (e) {
       print('Failed to send emergency alert: $e');
+      _showEmergencyError(e.toString());
     } finally {
       // Reset after 10 seconds
       Timer(const Duration(seconds: 10), () {
@@ -111,5 +115,23 @@ class EmergencyService {
   
   void dispose() {
     _stopShakeDetection();
+  }
+  
+  void _showEmergencyConfirmation(Map<String, dynamic> result) {
+    final alertsSent = result['alerts_sent'] ?? 0;
+    print('🚨 EMERGENCY ALERT SENT TO $alertsSent MATCHES');
+    
+    // You can add a toast/snackbar here if you have context
+    // For now, just vibrate again to confirm
+    HapticFeedback.mediumImpact();
+  }
+  
+  void _showEmergencyError(String error) {
+    print('❌ EMERGENCY ALERT FAILED: $error');
+    
+    // Triple vibration to indicate error
+    HapticFeedback.heavyImpact();
+    Timer(const Duration(milliseconds: 200), () => HapticFeedback.heavyImpact());
+    Timer(const Duration(milliseconds: 400), () => HapticFeedback.heavyImpact());
   }
 }

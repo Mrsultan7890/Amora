@@ -125,4 +125,5 @@ enum MessageType {
   image,
   gif,
   system,
+  emergency,
 }

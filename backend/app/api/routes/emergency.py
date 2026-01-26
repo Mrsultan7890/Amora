@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.core.database import get_db, Match
+from sqlalchemy import func
+from app.core.database import get_db, Match, Message
 from app.models.user import User
 from app.api.routes.auth import get_current_user
 from pydantic import BaseModel
@@ -73,13 +74,9 @@ async def _create_emergency_notification(
 ):
     """Create emergency notification for user"""
     
-    # Location text
     location_text = ""
     if latitude and longitude:
         location_text = f" at location {latitude:.6f}, {longitude:.6f}"
-    
-    # Create emergency message in chat
-    from app.core.database import Message
     
     # Find match between sender and receiver
     match = db.query(Match).filter(
@@ -89,23 +86,19 @@ async def _create_emergency_notification(
     ).first()
     
     if match:
-        # Create emergency message in chat
+        # Create emergency message
         emergency_message = Message(
             match_id=match.id,
-            sender_id="system",  # System message
+            sender_id="system",
             content=f"🚨 EMERGENCY ALERT: {sender_name} needs help{location_text}. Please check on them immediately!",
             message_type="emergency",
             is_read=False
         )
         
         db.add(emergency_message)
-        
-        # Update match last message time
-        match.last_message_at = func.now()
-        
         db.commit()
         
-        print(f"Emergency message added to chat for match {match.id}")
+        print(f"Emergency message saved to database for match {match.id}")
     
     return True
 

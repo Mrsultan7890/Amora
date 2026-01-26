@@ -385,16 +385,17 @@ class ApiService {
   }
   
   // Emergency Methods
-  Future<void> sendEmergencyAlert({
+  Future<Map<String, dynamic>> sendEmergencyAlert({
     double? latitude,
     double? longitude,
   }) async {
     try {
-      await _dio.post('/emergency/alert', data: {
+      final response = await _dio.post('/emergency/alert', data: {
         'latitude': latitude,
         'longitude': longitude,
         'timestamp': DateTime.now().toIso8601String(),
       });
+      return response.data;
     } catch (e) {
       throw _handleError(e);
     }
