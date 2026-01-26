@@ -103,140 +103,121 @@ class OfflineEmergencyService {
   
   // Main emergency trigger
   Future<void> triggerOfflineEmergency() async {
-    print('🚨 OfflineEmergencyService: triggerOfflineEmergency called');
-    print('🚨 Enabled: $_isEnabled, Active: $_isEmergencyActive');
-    
-    if (!_isEnabled) {
-      print('🚨 Offline emergency disabled');
-      return;
-    }
-    
-    if (_isEmergencyActive) {
-      print('🚨 Emergency already active, ignoring');
+    if (!_isEnabled || _isEmergencyActive) {
       return;
     }
     
     _isEmergencyActive = true;
-    print('🚨 OFFLINE EMERGENCY ACTIVATED!');
     
     try {
-      // 1. Get current location
-      print('🚨 Getting location...');
+      // Get current location
       final location = await LocationService.instance.getCurrentLocation();
-      print('🚨 Location: ${location?.latitude}, ${location?.longitude}');
       
-      // 2. Send SMS to all contacts
+      // Send SMS to all contacts
       if (_autoSmsEnabled) {
-        print('🚨 Sending SMS...');
         await _sendEmergencySMS(location?.latitude, location?.longitude);
-      } else {
-        print('🚨 SMS disabled, skipping');
       }
       
-      // 3. Start call sequence
-      print('🚨 Starting call sequence...');
+      // Start call sequence
       await _startEmergencyCallSequence();
       
-      // 4. Trigger alarm and flash
-      print('🚨 Triggering alarm...');
+      // Trigger alarm and flash
       await _triggerAlarmAndFlash();
       
-      // 5. Store emergency locally
-      print('🚨 Storing emergency locally...');
+      // Store emergency locally
       await _storeEmergencyLocally(location?.latitude, location?.longitude);
       
-      print('🚨 Offline emergency complete!');
-      
     } catch (e) {
-      print('🚨 Error in offline emergency: $e');
+      // Continue even if some parts fail
     } finally {
-      // Reset after 2 minutes (shorter for testing)
-      Timer(const Duration(minutes: 2), () {
-        print('🚨 Emergency cooldown complete');
+      // Reset after 1 minute (shorter for testing)
+      Timer(const Duration(minutes: 1), () {
         _isEmergencyActive = false;
       });
     }
   }
   
   Future<void> _sendEmergencySMS(double? latitude, double? longitude) async {
-    print('📱 Sending emergency SMS...');
     final enabledContacts = _contacts.where((c) => c.isEnabled).toList();
-    print('📱 Enabled contacts: ${enabledContacts.length}');
     
     if (enabledContacts.isEmpty) {
-      print('📱 No enabled contacts for SMS');
       return;
     }
     
     String locationText = '';
     if (latitude != null && longitude != null) {
-      locationText = '\nLocation: $latitude, $longitude\nGoogle Maps: https://maps.google.com/?q=$latitude,$longitude';
+      locationText = '\nLocation: $latitude, $longitude\nMaps: https://maps.google.com/?q=$latitude,$longitude';
     }
     
-    final message = '🚨 EMERGENCY ALERT 🚨\nI need immediate help!$locationText\nTime: ${DateTime.now().toString()}\nPlease call or come immediately!\n- Sent from Amora Emergency';
+    final message = 'EMERGENCY ALERT\nI need immediate help!$locationText\nTime: ${DateTime.now().toString().substring(0, 19)}\n- Amora Emergency';
     
     for (final contact in enabledContacts) {
       try {
-        print('📱 Sending SMS to ${contact.name} (${contact.phoneNumber})');
-        
-        final smsUri = Uri(
+        // Try SENDTO first (more reliable)
+        final sendtoUri = Uri(
           scheme: 'sms',
           path: contact.phoneNumber,
           queryParameters: {'body': message},
         );
         
-        print('📱 SMS URI: $smsUri');
-        
-        if (await canLaunchUrl(smsUri)) {
-          await launchUrl(smsUri, mode: LaunchMode.externalApplication);
-          print('📱 SMS launched for ${contact.name}');
-          
-          // Small delay between SMS
-          await Future.delayed(const Duration(milliseconds: 500));
-        } else {
-          print('📱 Cannot launch SMS URI for ${contact.name}');
+        bool launched = false;
+        if (await canLaunchUrl(sendtoUri)) {
+          launched = await launchUrl(
+            sendtoUri,
+            mode: LaunchMode.externalApplication,
+          );
         }
+        
+        if (!launched) {
+          // Fallback: try with different scheme
+          final fallbackUri = Uri.parse('sms:${contact.phoneNumber}?body=${Uri.encodeComponent(message)}');
+          if (await canLaunchUrl(fallbackUri)) {
+            await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+          }
+        }
+        
+        // Small delay between SMS
+        await Future.delayed(const Duration(milliseconds: 1000));
       } catch (e) {
-        print('📱 Failed to send SMS to ${contact.name}: $e');
+        // Continue with next contact
       }
     }
-    
-    print('📱 SMS sending complete');
   }
   
   Future<void> _startEmergencyCallSequence() async {
-    print('📞 Starting emergency call sequence...');
     final enabledContacts = _contacts.where((c) => c.isEnabled).toList();
-    print('📞 Enabled contacts for calls: ${enabledContacts.length}');
     
     if (enabledContacts.isEmpty) {
-      print('📞 No enabled contacts for calls');
       return;
     }
     
     for (final contact in enabledContacts) {
       try {
-        print('📞 Calling ${contact.name} at ${contact.phoneNumber}');
-        
+        // Try direct call
         final callUri = Uri(scheme: 'tel', path: contact.phoneNumber);
-        print('📞 Call URI: $callUri');
         
+        bool launched = false;
         if (await canLaunchUrl(callUri)) {
-          await launchUrl(callUri, mode: LaunchMode.externalApplication);
-          print('📞 Call launched for ${contact.name}');
-          
-          // Wait for call timeout before next call
-          print('📞 Waiting ${_callTimeout}s before next call...');
-          await Future.delayed(Duration(seconds: _callTimeout));
-        } else {
-          print('📞 Cannot launch call URI for ${contact.name}');
+          launched = await launchUrl(
+            callUri,
+            mode: LaunchMode.externalApplication,
+          );
         }
+        
+        if (!launched) {
+          // Fallback: try with different format
+          final fallbackUri = Uri.parse('tel:${contact.phoneNumber}');
+          if (await canLaunchUrl(fallbackUri)) {
+            await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+          }
+        }
+        
+        // Wait 10 seconds before next call (shorter for testing)
+        await Future.delayed(const Duration(seconds: 10));
       } catch (e) {
-        print('📞 Failed to call ${contact.name}: $e');
+        // Continue with next contact
       }
     }
-    
-    print('📞 Call sequence complete');
   }
   
   Future<void> _triggerAlarmAndFlash() async {

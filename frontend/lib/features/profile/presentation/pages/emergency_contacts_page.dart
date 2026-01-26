@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -515,12 +516,23 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _testOfflineEmergency() async {
+    // Check if contacts exist first
+    if (_contacts.where((c) => c.isEnabled).isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ No enabled emergency contacts found!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('🚨 Test Offline Emergency'),
-        content: const Text(
-          'This will send REAL SMS and make REAL calls to your emergency contacts!\n\nAre you sure you want to test?',
+        content: Text(
+          'This will send REAL SMS and make REAL calls to ${_contacts.where((c) => c.isEnabled).length} contacts:\n\n${_contacts.where((c) => c.isEnabled).map((c) => '• ${c.name} (${c.phoneNumber})').join('\n')}\n\nAre you sure?',
         ),
         actions: [
           TextButton(
@@ -537,22 +549,31 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     );
     
     if (confirmed == true) {
+      // Show immediate feedback
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('🚨 TESTING OFFLINE EMERGENCY...'),
+          content: Text('🚨 SENDING EMERGENCY ALERTS...'),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
+          duration: Duration(seconds: 2),
         ),
       );
+      
+      // Trigger vibration immediately
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 200));
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 200));
+      HapticFeedback.heavyImpact();
       
       try {
         await _emergencyService.triggerOfflineEmergency();
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Offline emergency test completed!'),
+            SnackBar(
+              content: Text('✅ Emergency alerts sent to ${_contacts.where((c) => c.isEnabled).length} contacts!'),
               backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
             ),
           );
         }
