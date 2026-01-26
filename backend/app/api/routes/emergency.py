@@ -42,6 +42,7 @@ async def send_emergency_alert(
                 await _create_emergency_notification(
                     db=db,
                     user_id=other_user.id,
+                    sender_id=current_user.id,
                     sender_name=current_user.name,
                     latitude=alert_data.latitude,
                     longitude=alert_data.longitude,
@@ -64,6 +65,7 @@ async def send_emergency_alert(
 async def _create_emergency_notification(
     db: Session,
     user_id: str,
+    sender_id: str,
     sender_name: str,
     latitude: Optional[float],
     longitude: Optional[float],
@@ -76,21 +78,34 @@ async def _create_emergency_notification(
     if latitude and longitude:
         location_text = f" at location {latitude:.6f}, {longitude:.6f}"
     
-    # Create notification message
-    message = f"🚨 EMERGENCY ALERT: {sender_name} needs help{location_text}. Please check on them immediately!"
+    # Create emergency message in chat
+    from app.core.database import Message
     
-    # Here you would typically:
-    # 1. Save to notifications table
-    # 2. Send push notification
-    # 3. Send SMS if configured
+    # Find match between sender and receiver
+    match = db.query(Match).filter(
+        ((Match.user1_id == user_id) & (Match.user2_id == sender_id)) |
+        ((Match.user1_id == sender_id) & (Match.user2_id == user_id)),
+        Match.is_active == True
+    ).first()
     
-    print(f"Emergency notification created for user {user_id}: {message}")
-    
-    # For now, just log the emergency alert
-    # In production, integrate with:
-    # - Firebase Cloud Messaging for push notifications
-    # - Twilio for SMS alerts
-    # - Email service for email alerts
+    if match:
+        # Create emergency message in chat
+        emergency_message = Message(
+            match_id=match.id,
+            sender_id="system",  # System message
+            content=f"🚨 EMERGENCY ALERT: {sender_name} needs help{location_text}. Please check on them immediately!",
+            message_type="emergency",
+            is_read=False
+        )
+        
+        db.add(emergency_message)
+        
+        # Update match last message time
+        match.last_message_at = func.now()
+        
+        db.commit()
+        
+        print(f"Emergency message added to chat for match {match.id}")
     
     return True
 
