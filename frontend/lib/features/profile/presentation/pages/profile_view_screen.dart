@@ -283,16 +283,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           const SizedBox(height: 12),
                         ],
                       ),
-                                      fontSize: 16,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          const SizedBox(height: 12),
-                        ],
-                      ),
 
                     // Bio
                     if (_user!.bio.isNotEmpty)
