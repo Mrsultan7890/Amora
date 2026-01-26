@@ -156,6 +156,15 @@ class ApiService {
     }
   }
   
+  Future<UserModel> getUserProfile(String userId) async {
+    try {
+      final response = await _dio.get('/users/$userId');
+      return UserModel.fromJson(response.data);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
   Future<UserModel> updateProfile(Map<String, dynamic> data) async {
     try {
       final response = await _dio.put('/users/profile', data: data);
@@ -203,12 +212,31 @@ class ApiService {
   }
   
   // Match Methods
-  Future<List<MatchModel>> getMatches() async {
+  Future<List<MatchModel>> getMatches({String? search}) async {
     try {
-      final response = await _dio.get('/matches/');
+      final queryParams = <String, dynamic>{};
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
+      }
+      
+      final response = await _dio.get('/matches/', queryParameters: queryParams);
       
       return (response.data as List)
           .map((json) => MatchModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<List<UserModel>> searchUsers(String query) async {
+    try {
+      final response = await _dio.get('/users/search', queryParameters: {
+        'query': query,
+      });
+      
+      return (response.data as List)
+          .map((json) => UserModel.fromJson(json))
           .toList();
     } catch (e) {
       throw _handleError(e);

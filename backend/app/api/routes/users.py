@@ -32,6 +32,23 @@ async def search_users(
     
     return [UserResponse.model_validate(user) for user in users]
 
+@router.get("/{user_id}", response_model=UserResponse)
+async def get_user_profile(
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(
+        User.id == user_id,
+        User.is_active == True
+    ).first()
+    
+    if not user:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return UserResponse.model_validate(user)
+
 @router.get("/profile")
 async def get_profile(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user)

@@ -4,7 +4,7 @@ from app.core.database import get_db, Match, Swipe
 from app.models.user import User
 from app.api.routes.auth import get_current_user, UserResponse
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 import json
 

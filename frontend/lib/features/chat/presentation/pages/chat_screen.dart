@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/models/match_model.dart';
 import '../../../../shared/models/message_model.dart';
+import '../../../profile/presentation/pages/profile_view_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final MatchModel match;
@@ -36,17 +37,19 @@ class _ChatScreenState extends State<ChatScreen> {
           id: '1',
           matchId: widget.match.id,
           senderId: widget.match.otherUser?.id ?? '',
+          senderName: widget.match.otherUser?.name ?? 'Unknown',
           content: 'Hey! Nice to match with you 😊',
-          messageType: 'text',
+          type: MessageType.text,
           isRead: true,
           createdAt: DateTime.now().subtract(const Duration(hours: 2)),
         ),
         MessageModel(
           id: '2',
           matchId: widget.match.id,
-          senderId: 'current_user_id', // This should be current user ID
+          senderId: 'current_user_id',
+          senderName: 'You',
           content: 'Hi there! How are you doing?',
-          messageType: 'text',
+          type: MessageType.text,
           isRead: true,
           createdAt: DateTime.now().subtract(const Duration(hours: 1)),
         ),
@@ -60,9 +63,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final message = MessageModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       matchId: widget.match.id,
-      senderId: 'current_user_id', // This should be current user ID
+      senderId: 'current_user_id',
+      senderName: 'You',
       content: _messageController.text.trim(),
-      messageType: 'text',
+      type: MessageType.text,
       isRead: false,
       createdAt: DateTime.now(),
     );
@@ -103,56 +107,69 @@ class _ChatScreenState extends State<ChatScreen> {
             color: AmoraTheme.deepMidnight,
           ),
         ),
-        title: Row(
-          children: [
-            Stack(
-              children: [
-                const CircleAvatar(
-                  radius: 20,
-                  child: Icon(Icons.person),
+        title: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfileViewScreen(
+                  userId: widget.match.otherUser?.id ?? '',
+                  userName: widget.match.otherUser?.name,
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            );
+          },
+          child: Row(
+            children: [
+              Stack(
                 children: [
-                  Text(
-                    widget.match.otherUser?.name ?? 'Unknown User',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AmoraTheme.deepMidnight,
-                    ),
+                  const CircleAvatar(
+                    radius: 20,
+                    child: Icon(Icons.person),
                   ),
-                  const Text(
-                    'Online',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green,
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 2,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.match.otherUser?.name ?? 'Unknown User',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AmoraTheme.deepMidnight,
+                      ),
+                    ),
+                    const Text(
+                      'Tap to view profile',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           IconButton(
@@ -192,6 +209,19 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Text('Report'),
               ),
             ],
+            onSelected: (value) {
+              if (value == 'profile') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfileViewScreen(
+                      userId: widget.match.otherUser?.id ?? '',
+                      userName: widget.match.otherUser?.name,
+                    ),
+                  ),
+                );
+              }
+            },
           ),
         ],
       ),
