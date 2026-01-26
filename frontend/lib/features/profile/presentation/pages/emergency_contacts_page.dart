@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_emergency_service.dart';
-import '../../../../core/services/emergency_service.dart';
 import '../../../../shared/models/emergency_contact_model.dart';
 
 class EmergencyContactsPage extends StatefulWidget {
@@ -425,7 +424,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
       case EmergencyContactType.ambulance:
         return '🚑 Ambulance';
       case EmergencyContactType.family:
-        return '👨👩👧👦 Family';
+        return '👨‍👩‍👧‍👦 Family';
       case EmergencyContactType.friend:
         return '👥 Friend';
       case EmergencyContactType.personal:
@@ -476,7 +475,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
           ),
         );
       } else {
-        // Show detailed setup instructions
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -503,22 +501,8 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context);
-                  
-                  // Show loading
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Requesting permissions...'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                  
-                  // Request permissions
                   await _emergencyService.requestPermissions();
-                  
-                  // Wait a bit for permissions to be processed
                   await Future.delayed(const Duration(seconds: 1));
-                  
-                  // Retest after permissions
                   _testEmergencySystem();
                 },
                 child: const Text('Grant Permissions'),
@@ -529,7 +513,8 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
       }
     }
   }
-    // Show confirmation dialog
+
+  void _testOfflineEmergency() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -580,70 +565,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
             ),
           );
         }
-      }
-    }
-  }
-    final isWorking = await _emergencyService.testEmergencySystem();
-    
-    if (mounted) {
-      if (isWorking) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Emergency system is ready!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        // Show detailed setup instructions
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('⚠️ Emergency Setup Required'),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('To use emergency system, you need:'),
-                SizedBox(height: 12),
-                Text('1. 📞 Phone permission'),
-                Text('2. 💬 SMS permission'),
-                Text('3. 📍 Location permission'),
-                Text('4. 👥 At least 1 emergency contact'),
-                SizedBox(height: 12),
-                Text('Tap "Grant Permissions" to setup.'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  
-                  // Show loading
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Requesting permissions...'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                  
-                  // Request permissions
-                  await _emergencyService.requestPermissions();
-                  
-                  // Wait a bit for permissions to be processed
-                  await Future.delayed(const Duration(seconds: 1));
-                  
-                  // Retest after permissions
-                  _testEmergencySystem();
-                },
-                child: const Text('Grant Permissions'),
-              ),
-            ],
-          ),
-        );
       }
     }
   }
