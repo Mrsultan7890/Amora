@@ -21,64 +21,94 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<MessageModel> _messages = [];
+  final ApiService _apiService = ApiService.instance;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
+    _loadCurrentUser();
     _loadMessages();
   }
 
+  Future<void> _loadCurrentUser() async {
+    try {
+      final user = await _apiService.getCurrentUser();
+      setState(() {
+        _currentUserId = user.id;
+      });
+    } catch (e) {
+      print('Error loading current user: $e');
+    }
+  }
+
   Future<void> _loadMessages() async {
-    // TODO: Load messages from API
-    // For now, add some dummy messages
-    setState(() {
-      _messages.addAll([
-        MessageModel(
-          id: '1',
-          matchId: widget.match.id,
-          senderId: widget.match.otherUser?.id ?? '',
-          senderName: widget.match.otherUser?.name ?? 'Unknown',
-          content: 'Hey! Nice to match with you 😊',
-          type: MessageType.text,
-          isRead: true,
-          createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-        ),
-        MessageModel(
-          id: '2',
-          matchId: widget.match.id,
-          senderId: 'current_user_id',
-          senderName: 'You',
-          content: 'Hi there! How are you doing?',
-          type: MessageType.text,
-          isRead: true,
-          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-        ),
-      ]);
-    });
+    try {
+      final messages = await _apiService.getMessages(
+        matchId: widget.match.id,
+        skip: 0,
+        limit: 50,
+      );
+      setState(() {
+        _messages.clear();
+        _messages.addAll(messages);
+      });
+      _scrollToBottom();
+    } catch (e) {
+      print('Error loading messages: $e');
+      // Keep dummy messages for now
+      setState(() {
+        _messages.addAll([
+          MessageModel(
+            id: '1',
+            matchId: widget.match.id,
+            senderId: widget.match.otherUser?.id ?? '',
+            senderName: widget.match.otherUser?.name ?? 'Unknown',
+            content: 'Hey! Nice to match with you 😊',
+            type: MessageType.text,
+            isRead: true,
+            createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+          ),
+        ]);
+      });
+    }
   }
 
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
 
-    final message = MessageModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      matchId: widget.match.id,
-      senderId: 'current_user_id',
-      senderName: 'You',
-      content: _messageController.text.trim(),
-      type: MessageType.text,
-      isRead: false,
-      createdAt: DateTime.now(),
-    );
-
-    setState(() {
-      _messages.add(message);
-    });
-
+    final messageContent = _messageController.text.trim();
     _messageController.clear();
-    _scrollToBottom();
 
-    // TODO: Send message via API
+    // Send message via API
+    _apiService.sendMessage(
+      matchId: widget.match.id,
+      content: messageContent,
+      messageType: 'text',
+    ).then((sentMessage) {
+      setState(() {
+        _messages.add(sentMessage);
+      });
+      _scrollToBottom();
+    }).catchError((error) {
+      print('Error sending message: $error');
+      // Add message locally for now
+      final message = MessageModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        matchId: widget.match.id,
+        senderId: _currentUserId ?? 'unknown',
+        senderName: 'You',
+        content: messageContent,
+        type: MessageType.text,
+        isRead: false,
+        createdAt: DateTime.now(),
+      );
+
+      setState(() {
+        _messages.add(message);
+      });
+      _scrollToBottom();
+    });
   }
 
   void _scrollToBottom() {
@@ -266,7 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final message = _messages[index];
-                      final isMe = message.senderId == 'current_user_id';
+                      final isMe = _currentUserId != null && message.senderId == _currentUserId;
                       return _buildMessageBubble(message, isMe, index);
                     },
                   ),

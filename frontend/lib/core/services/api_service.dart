@@ -383,6 +383,22 @@ class ApiService {
       throw _handleError(e);
     }
   }
+  
+  // Emergency Methods
+  Future<void> sendEmergencyAlert({
+    double? latitude,
+    double? longitude,
+  }) async {
+    try {
+      await _dio.post('/emergency/alert', data: {
+        'latitude': latitude,
+        'longitude': longitude,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
   String _handleError(dynamic error) {
     if (error is DioException) {
       if (error.response != null) {

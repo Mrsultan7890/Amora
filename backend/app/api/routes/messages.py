@@ -5,7 +5,8 @@ from typing import List, Optional
 from datetime import datetime
 import uuid
 
-from app.core.database import get_db, Message, Match, User
+from app.core.database import get_db, Match
+from app.models.user import User
 from app.api.routes.auth import get_current_user
 
 router = APIRouter()
@@ -54,8 +55,9 @@ async def send_message(
         )
     
     # Create message
+    from app.core.database import Message
     message = Message(
-        match_id=uuid.UUID(message_data.match_id),
+        match_id=message_data.match_id,
         sender_id=current_user.id,
         content=message_data.content,
         message_type=message_data.message_type,
@@ -106,19 +108,21 @@ async def get_messages(
         )
     
     # Get messages
+    from app.core.database import Message
     messages = db.query(Message, User).join(
         User, Message.sender_id == User.id
     ).filter(
         Message.match_id == match_id
     ).order_by(
-        Message.created_at.desc()
+        Message.created_at.asc()
     ).offset(skip).limit(limit).all()
     
     # Mark messages as read
-    db.query(Message).filter(
-        Message.match_id == match_id,
-        Message.sender_id != current_user.id,
-        Message.is_read == False
+    from app.core.database import Message as MessageModel
+    db.query(MessageModel).filter(
+        MessageModel.match_id == match_id,
+        MessageModel.sender_id != current_user.id,
+        MessageModel.is_read == False
     ).update({"is_read": True})
     db.commit()
     
@@ -167,6 +171,7 @@ async def mark_message_read(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from app.core.database import Message
     message = db.query(Message).filter(Message.id == message_id).first()
     
     if not message:
@@ -206,6 +211,7 @@ async def get_unread_count(
             detail="Match not found"
         )
     
+    from app.core.database import Message
     unread_count = db.query(Message).filter(
         Message.match_id == match_id,
         Message.sender_id != current_user.id,

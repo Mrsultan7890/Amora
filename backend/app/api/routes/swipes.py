@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.core.database import get_db, Swipe, Match
 from app.models.user import User
 from app.api.routes.auth import get_current_user
 from pydantic import BaseModel
 from typing import List
 import uuid
+import math
 
 router = APIRouter()
 
@@ -72,44 +74,88 @@ async def create_swipe(
 async def discover_users(
     page: int = 1,
     limit: int = 10,
+    max_distance: int = 50,  # km
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    print(f"Discover request - User: {current_user.id}, Page: {page}, Limit: {limit}")
-    
-    # Check total users in database
-    total_all_users = db.query(User).count()
-    print(f"Total users in database: {total_all_users}")
+    print(f"Discover request - User: {current_user.id}, Page: {page}, Limit: {limit}, Max Distance: {max_distance}km")
     
     # Get users that haven't been swiped on
     swiped_user_ids = [row[0] for row in db.query(Swipe.swiped_id).filter(
         Swipe.swiper_id == current_user.id
     ).all()]
     
-    print(f"Swiped user IDs: {swiped_user_ids}")
-    
-    # Get all users except current user
+    # Base query - exclude current user and swiped users
     users_query = db.query(User).filter(
-        User.id != current_user.id
+        User.id != current_user.id,
+        User.is_active == True
     )
     
-    # For testing - show all users (comment out swipe filter)
-    # if swiped_user_ids:
-    #     users_query = users_query.filter(~User.id.in_(swiped_user_ids))
+    if swiped_user_ids:
+        users_query = users_query.filter(~User.id.in_(swiped_user_ids))
     
-    total_users = users_query.count()
-    print(f"Total available users: {total_users}")
+    # Apply location filtering if current user has location
+    if current_user.latitude and current_user.longitude:
+        # Calculate distance using Haversine formula in SQL
+        # This is approximate but efficient for filtering
+        lat_diff = func.abs(User.latitude - current_user.latitude)
+        lon_diff = func.abs(User.longitude - current_user.longitude)
+        
+        # Rough distance filter (1 degree ≈ 111km)
+        max_lat_diff = max_distance / 111.0
+        max_lon_diff = max_distance / (111.0 * func.cos(func.radians(current_user.latitude)))
+        
+        users_query = users_query.filter(
+            User.latitude.isnot(None),
+            User.longitude.isnot(None),
+            lat_diff <= max_lat_diff,
+            lon_diff <= max_lon_diff
+        )
+        
+        print(f"Applied location filter: max distance {max_distance}km")
+    else:
+        print("No location data for current user, showing all users")
     
     # Apply pagination
     offset = (page - 1) * limit
     users = users_query.offset(offset).limit(limit).all()
     
     print(f"Retrieved {len(users)} users for page {page}")
-    for user in users:
-        print(f"User: {user.name} ({user.id})")
     
     from app.api.routes.auth import UserResponse
-    result = [UserResponse.model_validate(u) for u in users]
+    result = []
     
-    print(f"Returning {len(result)} user profiles")
+    for user in users:
+        user_data = UserResponse.model_validate(user)
+        
+        # Add distance if both users have location
+        if (current_user.latitude and current_user.longitude and 
+            user.latitude and user.longitude):
+            distance = calculate_distance(
+                current_user.latitude, current_user.longitude,
+                user.latitude, user.longitude
+            )
+            # Add distance to response (you might need to modify UserResponse model)
+            user_dict = user_data.model_dump()
+            user_dict['distance'] = round(distance, 1)
+            result.append(user_dict)
+        else:
+            result.append(user_data.model_dump())
+    
+    print(f"Returning {len(result)} user profiles with location data")
     return result
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """Calculate distance between two points using Haversine formula"""
+    R = 6371  # Earth's radius in kilometers
+    
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
+    delta_lat = math.radians(lat2 - lat1)
+    delta_lon = math.radians(lon2 - lon1)
+    
+    a = (math.sin(delta_lat / 2) ** 2 + 
+         math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    
+    return R * c

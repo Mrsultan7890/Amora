@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/services/api_service.dart';
+import 'core/services/location_service.dart';
+import 'core/services/emergency_service.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/splash_page.dart';
 import 'features/auth/presentation/pages/onboarding_page.dart';
@@ -26,8 +28,18 @@ void main() async {
     print('Initializing API service...');
     await ApiService.instance.initialize();
     print('API service initialized');
+    
+    // Initialize location service
+    print('Initializing location service...');
+    await LocationService.instance.initializeLocation();
+    print('Location service initialized');
+    
+    // Initialize emergency service
+    print('Initializing emergency service...');
+    await EmergencyService.instance.initialize();
+    print('Emergency service initialized');
   } catch (e) {
-    print('API service initialization error: $e');
+    print('Service initialization error: $e');
   }
   
   print('Starting app widget...');

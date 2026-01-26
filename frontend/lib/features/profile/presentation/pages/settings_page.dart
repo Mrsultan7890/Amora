@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/settings_service.dart';
+import '../../../../core/services/emergency_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -20,6 +21,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _emailNotifications = false;
   bool _showOnlineStatus = true;
   bool _showDistance = true;
+  bool _emergencyShakeEnabled = true;
   double _maxDistance = 50.0;
   RangeValues _ageRange = const RangeValues(18, 35);
   String _interestedIn = 'Everyone';
@@ -49,6 +51,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _emailNotifications = settings['email_notifications'];
           _showOnlineStatus = settings['show_online_status'];
           _showDistance = settings['show_distance'];
+          _emergencyShakeEnabled = settings['emergency_shake_enabled'] ?? true;
           _showMeOnAmora = settings['show_me_on_amora'];
           _incognitoMode = settings['incognito_mode'];
         });
@@ -208,6 +211,21 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Let others see when you\'re online',
                           _showOnlineStatus,
                           (value) => setState(() => _showOnlineStatus = value),
+                        ),
+                        
+                        const Divider(height: 1),
+                        
+                        _buildSwitchSetting(
+                          'Emergency Shake Alert',
+                          'Shake phone to send emergency alert to all matches',
+                          _emergencyShakeEnabled,
+                          (value) async {
+                            setState(() => _emergencyShakeEnabled = value);
+                            await _settingsService.setEmergencyShakeEnabled(value);
+                            // Update emergency service
+                            final EmergencyService emergencyService = EmergencyService.instance;
+                            await emergencyService.setEmergencyEnabled(value);
+                          },
                         ),
                         
                         const Divider(height: 1),

@@ -504,14 +504,44 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     
                     if (user.job != null) ...[
                       const SizedBox(height: 4),
-                      Text(
-                        user.job!,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.work_outline,
+                            color: Colors.white70,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            user.job!,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
+                    
+                    // Distance display
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.white70,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          user.distanceText,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
                     
                     if (user.bio.isNotEmpty) ...[
                       const SizedBox(height: 8),

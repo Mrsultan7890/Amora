@@ -153,8 +153,8 @@ class UserModel extends Equatable {
   String get ageText => '$age';
   
   String get distanceText {
-    // Calculate distance based on current user's location
-    return '2 km away'; // Placeholder
+    // This will be updated with real distance from API response
+    return '2 km away'; // Placeholder - will be replaced by API data
   }
   
   bool get hasCompleteProfile {
