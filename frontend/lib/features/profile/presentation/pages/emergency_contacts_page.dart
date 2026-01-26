@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_emergency_service.dart';
+import '../../../../core/services/emergency_service.dart';
 import '../../../../shared/models/emergency_contact_model.dart';
 
 class EmergencyContactsPage extends StatefulWidget {
@@ -169,29 +170,55 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                           ),
               ),
 
-              // Test button
+              // Test buttons
               Container(
                 padding: const EdgeInsets.all(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _testEmergencySystem,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _testEmergencySystem,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Test Emergency System',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                    child: const Text(
-                      'Test Emergency System',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _testOfflineEmergency,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '🚨 TEST OFFLINE EMERGENCY 🚨',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -438,6 +465,124 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _testEmergencySystem() async {
+    final isWorking = await _emergencyService.testEmergencySystem();
+    
+    if (mounted) {
+      if (isWorking) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Emergency system is ready!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        // Show detailed setup instructions
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('⚠️ Emergency Setup Required'),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('To use emergency system, you need:'),
+                SizedBox(height: 12),
+                Text('1. 📞 Phone permission'),
+                Text('2. 💬 SMS permission'),
+                Text('3. 📍 Location permission'),
+                Text('4. 👥 At least 1 emergency contact'),
+                SizedBox(height: 12),
+                Text('Tap "Grant Permissions" to setup.'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  
+                  // Show loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Requesting permissions...'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  
+                  // Request permissions
+                  await _emergencyService.requestPermissions();
+                  
+                  // Wait a bit for permissions to be processed
+                  await Future.delayed(const Duration(seconds: 1));
+                  
+                  // Retest after permissions
+                  _testEmergencySystem();
+                },
+                child: const Text('Grant Permissions'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🚨 Test Offline Emergency'),
+        content: const Text(
+          'This will send REAL SMS and make REAL calls to your emergency contacts!\n\nAre you sure you want to test?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('YES, TEST NOW'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🚨 TESTING OFFLINE EMERGENCY...'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      
+      try {
+        await _emergencyService.triggerOfflineEmergency();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Offline emergency test completed!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Test failed: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
     final isWorking = await _emergencyService.testEmergencySystem();
     
     if (mounted) {

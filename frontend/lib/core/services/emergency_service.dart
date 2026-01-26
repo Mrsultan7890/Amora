@@ -22,10 +22,14 @@ class EmergencyService {
   static const int _shakeCooldown = 5000; // 5 seconds
   
   Future<void> initialize() async {
+    print('🚨 EmergencyService: Initializing...');
     await _loadEmergencySettings();
+    print('🚨 EmergencyService: Emergency enabled: $_isEmergencyEnabled');
     if (_isEmergencyEnabled) {
       _startShakeDetection();
+      print('🚨 EmergencyService: Shake detection started');
     }
+    print('🚨 EmergencyService: Initialization complete');
   }
   
   Future<void> _loadEmergencySettings() async {
@@ -46,9 +50,13 @@ class EmergencyService {
   }
   
   void _startShakeDetection() {
+    print('🚨 EmergencyService: Starting shake detection...');
     _accelerometerSubscription = accelerometerEventStream().listen((event) {
       _detectShake(event);
+    }, onError: (error) {
+      print('🚨 EmergencyService: Accelerometer error: $error');
     });
+    print('🚨 EmergencyService: Accelerometer stream subscribed');
   }
   
   void _stopShakeDetection() {
@@ -64,32 +72,45 @@ class EmergencyService {
       event.x * event.x + event.y * event.y + event.z * event.z
     );
     
+    // Debug: Print acceleration values occasionally
+    if (DateTime.now().millisecondsSinceEpoch % 1000 < 50) {
+      print('🚨 Acceleration: ${acceleration.toStringAsFixed(2)} (threshold: $_shakeThreshold)');
+    }
+    
     if (acceleration > _shakeThreshold) {
+      print('🚨 SHAKE DETECTED! Acceleration: ${acceleration.toStringAsFixed(2)}');
       final now = DateTime.now();
       
       // Check cooldown period
       if (_lastShakeTime != null && 
           now.difference(_lastShakeTime!).inMilliseconds < _shakeCooldown) {
+        print('🚨 Shake ignored - cooldown active');
         return;
       }
       
       _lastShakeTime = now;
+      print('🚨 Triggering emergency!');
       _triggerEmergency();
     }
   }
   
   Future<void> _triggerEmergency() async {
-    if (_isShakeDetected) return;
-    
+    if (_isShakeDetected) {
+      print('🚨 Emergency already in progress, ignoring');
+      return;
+    }
+
     _isShakeDetected = true;
-    
+    print('🚨 EMERGENCY TRIGGERED!');
+
     try {
-      // Vibrate phone
+      // Vibrate phone immediately
       HapticFeedback.heavyImpact();
       
       // Try online emergency first
       bool onlineSuccess = false;
       try {
+        print('🚨 Attempting online emergency...');
         // Get current location
         final location = await LocationService.instance.getCurrentLocation();
         
@@ -99,38 +120,48 @@ class EmergencyService {
           longitude: location?.longitude,
         );
         
-        print('Online emergency alert sent successfully: $result');
+        print('🚨 Online emergency alert sent successfully: $result');
         _showEmergencyConfirmation(result);
         onlineSuccess = true;
         
       } catch (e) {
-        print('Online emergency failed: $e');
+        print('🚨 Online emergency failed: $e');
         onlineSuccess = false;
       }
       
-      // If online fails OR as backup, trigger offline emergency
-      if (!onlineSuccess) {
-        print('Triggering offline emergency as fallback');
+      // ALWAYS trigger offline emergency (as backup or primary)
+      print('🚨 Triggering offline emergency...');
+      try {
         await OfflineEmergencyService.instance.triggerOfflineEmergency();
         _showOfflineEmergencyConfirmation();
-      } else {
-        // Even if online works, still trigger offline as backup
-        print('Triggering offline emergency as backup');
-        await OfflineEmergencyService.instance.triggerOfflineEmergency();
+        print('🚨 Offline emergency triggered successfully');
+      } catch (e) {
+        print('🚨 Offline emergency failed: $e');
+      }
+      
+      if (!onlineSuccess) {
+        _showEmergencyError('Online emergency failed, offline emergency activated');
       }
       
     } catch (e) {
-      print('Failed to send emergency alert: $e');
+      print('🚨 Failed to send emergency alert: $e');
       _showEmergencyError(e.toString());
     } finally {
       // Reset after 10 seconds
       Timer(const Duration(seconds: 10), () {
+        print('🚨 Emergency detection reset');
         _isShakeDetected = false;
       });
     }
   }
   
   bool get isEmergencyEnabled => _isEmergencyEnabled;
+  
+  // Manual test function
+  Future<void> testEmergencyTrigger() async {
+    print('🚨 MANUAL EMERGENCY TEST TRIGGERED');
+    await _triggerEmergency();
+  }
   
   void dispose() {
     _stopShakeDetection();
