@@ -504,7 +504,7 @@ class _ChatScreenState extends State<ChatScreen> {
           if (hasLocation) ...[
             const SizedBox(height: 12),
             GestureDetector(
-              onTap: () => _openLocationInMap(latitude!, longitude!),
+              onTap: () => _openLocationInMap(latitude, longitude),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
