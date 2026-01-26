@@ -458,8 +458,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final locationMatch = RegExp(r'location (-?\d+\.\d+), (-?\d+\.\d+)')
         .firstMatch(message.content);
     final hasLocation = locationMatch != null;
-    final latitude = hasLocation ? double.tryParse(locationMatch!.group(1)!) : null;
-    final longitude = hasLocation ? double.tryParse(locationMatch!.group(2)!) : null;
+    final latitude = hasLocation ? double.tryParse(locationMatch.group(1) ?? '') : null;
+    final longitude = hasLocation ? double.tryParse(locationMatch.group(2) ?? '') : null;
     
     return Container(
       width: double.infinity,
