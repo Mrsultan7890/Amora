@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/emergency_service.dart';
+import '../../../../core/services/offline_emergency_service.dart';
 import 'emergency_contacts_page.dart';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';

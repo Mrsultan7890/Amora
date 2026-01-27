@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/services/api_service.dart';
-import '../../../../shared/widgets/loading_widget.dart';
 import 'verification_status_page.dart';
 
 class AmoraDevChatPage extends StatefulWidget {
@@ -18,15 +16,12 @@ class AmoraDevChatPage extends StatefulWidget {
 }
 
 class _AmoraDevChatPageState extends State<AmoraDevChatPage> {
-  final ApiService _apiService = ApiService();
-  final TextEditingController _messageController = TextEditingController();
+  final ApiService _apiService = ApiService.instance;
   final ScrollController _scrollController = ScrollController();
   
   List<ChatMessage> _messages = [];
-  bool _isLoading = false;
   bool _isEligible = false;
   String _selectedBadgeColor = 'blue';
-  bool _showPaymentOptions = false;
   
   final String _upiId = 'khansalahuddin2023@okicici';
   
@@ -167,7 +162,7 @@ class _AmoraDevChatPageState extends State<AmoraDevChatPage> {
     ));
 
     try {
-      final response = await _apiService.requestVerification(_selectedBadgeColor);
+      await _apiService.requestVerification(_selectedBadgeColor);
       
       if (isDonation) {
         _addMessage(ChatMessage(
@@ -361,6 +356,14 @@ class _AmoraDevChatPageState extends State<AmoraDevChatPage> {
                             data: 'upi://pay?pa=$_upiId&am=${message.amount}&cu=INR&tn=Amora Verification',
                             version: QrVersions.auto,
                             size: 150,
+                            eyeStyle: const QrEyeStyle(
+                              eyeShape: QrEyeShape.square,
+                              color: Colors.black,
+                            ),
+                            dataModuleStyle: const QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.square,
+                              color: Colors.black,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Row(

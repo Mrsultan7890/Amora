@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/api_service.dart';
-import '../../../../shared/widgets/loading_widget.dart';
 
 class VerificationStatusPage extends StatefulWidget {
   const VerificationStatusPage({Key? key}) : super(key: key);
@@ -10,7 +9,7 @@ class VerificationStatusPage extends StatefulWidget {
 }
 
 class _VerificationStatusPageState extends State<VerificationStatusPage> {
-  final ApiService _apiService = ApiService();
+  final ApiService _apiService = ApiService.instance;
   bool _isLoading = true;
   Map<String, dynamic> _status = {};
 
@@ -49,7 +48,9 @@ class _VerificationStatusPageState extends State<VerificationStatusPage> {
         foregroundColor: Colors.white,
       ),
       body: _isLoading
-          ? const LoadingWidget()
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
           : RefreshIndicator(
               onRefresh: _loadStatus,
               child: SingleChildScrollView(

@@ -525,7 +525,7 @@ class _MatchesPageState extends State<MatchesPage> {
           break;
         case 'super':
           // Sort super likes first (placeholder logic)
-          _filteredMatches.sort((a, b) => (b.isMatch ? 1 : 0).compareTo(a.isMatch ? 1 : 0));
+          _filteredMatches.sort((a, b) => (b.createdAt.millisecondsSinceEpoch).compareTo(a.createdAt.millisecondsSinceEpoch));
           break;
       }
     });

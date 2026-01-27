@@ -441,7 +441,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
       ),
     );
   }
-    return Scaffold(
+
+  @override
+  Widget build(BuildContext context) {
       body: Container(
         decoration: const BoxDecoration(
           gradient: AmoraTheme.backgroundGradient,
