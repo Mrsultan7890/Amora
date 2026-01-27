@@ -79,19 +79,6 @@ enum EmergencyContactType {
 // Default emergency contacts
 class DefaultEmergencyContacts {
   static List<EmergencyContact> getDefaults() {
-    return [
-      const EmergencyContact(
-        id: 'police',
-        name: 'Police',
-        phoneNumber: '100',
-        type: EmergencyContactType.police,
-      ),
-      const EmergencyContact(
-        id: 'ambulance',
-        name: 'Ambulance',
-        phoneNumber: '108',
-        type: EmergencyContactType.ambulance,
-      ),
-    ];
+    return [];
   }
 }

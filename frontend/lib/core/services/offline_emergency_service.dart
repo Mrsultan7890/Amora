@@ -116,11 +116,8 @@ class OfflineEmergencyService {
   }
   
   Future<void> removeContact(String contactId) async {
-    // Don't allow removing default contacts
-    if (!['police', 'ambulance'].contains(contactId)) {
-      _contacts.removeWhere((c) => c.id == contactId);
-      await _saveContacts();
-    }
+    _contacts.removeWhere((c) => c.id == contactId);
+    await _saveContacts();
   }
   
   // Main emergency trigger

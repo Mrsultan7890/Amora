@@ -11,10 +11,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # Telegram
-    TELEGRAM_BOT_TOKEN: str
-    TELEGRAM_CHAT_ID: str
-    TELEGRAM_API_URL: str = "https://api.telegram.org"
+    # Telegram - Multiple Bots
+    TELEGRAM_REPORT_BOT_TOKEN: str = ""
+    TELEGRAM_REPORT_CHAT_ID: str = ""
+    TELEGRAM_SUPPORT_BOT_TOKEN: str = ""
+    TELEGRAM_SUPPORT_CHAT_ID: str = ""
+    TELEGRAM_STORAGE_BOT_TOKEN: str = ""
+    TELEGRAM_STORAGE_CHAT_ID: str = ""
     
     # App
     DEBUG: bool = False

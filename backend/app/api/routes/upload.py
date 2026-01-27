@@ -24,20 +24,20 @@ async def upload_image(file: UploadFile = File(...)):
         file_content = await file.read()
         print(f"File size: {len(file_content)} bytes")
         
-        # Upload to Telegram
-        if settings.TELEGRAM_BOT_TOKEN and settings.TELEGRAM_CHAT_ID:
-            print(f"Uploading to Telegram: {settings.TELEGRAM_CHAT_ID}")
+        # Upload to Telegram Storage Bot
+        if settings.TELEGRAM_STORAGE_BOT_TOKEN and settings.TELEGRAM_STORAGE_CHAT_ID:
+            print(f"Uploading to Telegram Storage: {settings.TELEGRAM_STORAGE_CHAT_ID}")
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
                     files = {
                         'photo': (unique_filename, file_content, file.content_type)
                     }
                     data = {
-                        'chat_id': settings.TELEGRAM_CHAT_ID
+                        'chat_id': settings.TELEGRAM_STORAGE_CHAT_ID
                     }
                     
                     response = await client.post(
-                        f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendPhoto",
+                        f"https://api.telegram.org/bot{settings.TELEGRAM_STORAGE_BOT_TOKEN}/sendPhoto",
                         files=files,
                         data=data
                     )
@@ -51,14 +51,14 @@ async def upload_image(file: UploadFile = File(...)):
                             file_id = result['result']['photo'][-1]['file_id']
                             # Get file info to get proper URL
                             file_info_response = await client.get(
-                                f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/getFile",
+                                f"https://api.telegram.org/bot{settings.TELEGRAM_STORAGE_BOT_TOKEN}/getFile",
                                 params={'file_id': file_id}
                             )
                             if file_info_response.status_code == 200:
                                 file_info = file_info_response.json()
                                 if file_info.get('ok'):
                                     file_path = file_info['result']['file_path']
-                                    telegram_url = f"https://api.telegram.org/file/bot{settings.TELEGRAM_BOT_TOKEN}/{file_path}"
+                                    telegram_url = f"https://api.telegram.org/file/bot{settings.TELEGRAM_STORAGE_BOT_TOKEN}/{file_path}"
                                     print(f"Returning Telegram URL: {telegram_url}")
                                     return {"url": telegram_url}
                     else:

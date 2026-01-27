@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List
 from ...core.database import get_db
 from ...models.user import User
@@ -11,7 +12,7 @@ router = APIRouter()
 # In production, you'd have a notifications table
 # For now, we'll generate notifications based on user activity
 
-@router.get("/notifications")
+@router.get("/")
 async def get_notifications(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -20,8 +21,8 @@ async def get_notifications(
     
     # Get user's matches for match notifications
     matches_query = db.execute(
-        "SELECT * FROM matches WHERE user1_id = ? OR user2_id = ? ORDER BY created_at DESC LIMIT 5",
-        (current_user.id, current_user.id)
+        text("SELECT * FROM matches WHERE user1_id = :user_id OR user2_id = :user_id ORDER BY created_at DESC LIMIT 5"),
+        {"user_id": current_user.id}
     ).fetchall()
     
     notifications = []
@@ -58,7 +59,7 @@ async def get_notifications(
     
     return {"notifications": notifications, "unread_count": unread_count}
 
-@router.put("/notifications/{notification_id}/read")
+@router.put("/{notification_id}/read")
 async def mark_notification_read(
     notification_id: str,
     current_user: User = Depends(get_current_user),
@@ -68,7 +69,7 @@ async def mark_notification_read(
     # In production, update notification in database
     return {"message": "Notification marked as read"}
 
-@router.get("/notifications/unread-count")
+@router.get("/unread-count")
 async def get_unread_count(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -76,8 +77,8 @@ async def get_unread_count(
     """Get unread notifications count"""
     # Get actual count from matches and messages
     matches_count = db.execute(
-        "SELECT COUNT(*) FROM matches WHERE (user1_id = ? OR user2_id = ?) AND created_at > datetime('now', '-1 day')",
-        (current_user.id, current_user.id)
+        text("SELECT COUNT(*) FROM matches WHERE (user1_id = :user_id OR user2_id = :user_id) AND created_at > datetime('now', '-1 day')"),
+        {"user_id": current_user.id}
     ).fetchone()[0]
     
     return {"unread_count": matches_count + 1}  # +1 for sample message

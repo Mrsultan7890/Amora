@@ -23,12 +23,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Future<void> _loadNotifications() async {
     try {
+      print('Loading notifications...');
       final response = await _apiService.getNotifications();
+      print('Notifications response: $response');
       setState(() {
-        _notifications = List<Map<String, dynamic>>.from(response['notifications']);
+        _notifications = List<Map<String, dynamic>>.from(response['notifications'] ?? []);
         _isLoading = false;
       });
+      print('Loaded ${_notifications.length} notifications');
     } catch (e) {
+      print('Error loading notifications: $e');
       setState(() {
         _isLoading = false;
       });

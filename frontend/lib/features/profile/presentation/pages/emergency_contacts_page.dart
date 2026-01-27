@@ -326,13 +326,47 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                         ),
                       )
                     : _contacts.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Loading contacts...',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                              ),
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.contact_emergency,
+                                  size: 64,
+                                  color: AmoraTheme.sunsetRose,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'No Emergency Contacts',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: AmoraTheme.deepMidnight,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Add emergency contacts to enable\nshake detection alerts',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AmoraTheme.deepMidnight.withOpacity(0.7),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton(
+                                  onPressed: _addContact,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AmoraTheme.sunsetRose,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: const Text('Add First Contact'),
+                                ),
+                              ],
                             ),
                           )
                         : SingleChildScrollView(
@@ -450,11 +484,10 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                   value: 'edit',
                   child: Text('Edit'),
                 ),
-                if (!['police', 'ambulance'].contains(contact.id))
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Delete'),
-                  ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Delete'),
+                ),
               ],
               onSelected: (value) {
                 if (value == 'edit') {
@@ -618,17 +651,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _deleteContact(EmergencyContact contact) {
-    // Don't allow deleting default contacts
-    if (['police', 'ambulance'].contains(contact.id)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Cannot delete default emergency contacts'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
