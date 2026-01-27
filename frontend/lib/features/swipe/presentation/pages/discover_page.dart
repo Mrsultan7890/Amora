@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../notifications/presentation/pages/notifications_page.dart';
 
@@ -18,14 +19,24 @@ class DiscoverPage extends StatefulWidget {
 class _DiscoverPageState extends State<DiscoverPage> {
   final CardSwiperController _cardController = CardSwiperController();
   final ApiService _apiService = ApiService.instance;
+  final NotificationService _notificationService = NotificationService.instance;
   
   List<UserModel> _profiles = [];
   bool _isLoading = true;
+  int _notificationCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadProfiles();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    await _notificationService.initialize();
+    setState(() {
+      _notificationCount = _notificationService.unreadCount;
+    });
   }
 
   Future<void> _loadProfiles() async {
@@ -61,6 +72,19 @@ class _DiscoverPageState extends State<DiscoverPage> {
       // Check for match
       if (isLike && result['is_match'] == true && mounted) {
         _showMatchDialog(swipedUser);
+        
+        // Add match notification
+        await _notificationService.addNotification(
+          type: NotificationType.newMatch,
+          title: 'New Match! 💕',
+          message: 'You matched with ${swipedUser.name}',
+          data: {'userId': swipedUser.id, 'name': swipedUser.name},
+        );
+        
+        // Update notification count
+        setState(() {
+          _notificationCount = _notificationService.unreadCount;
+        });
       }
       
       return true;
@@ -224,13 +248,20 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     ),
                     
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const NotificationsPage(),
                           ),
                         );
+                        
+                        // Refresh notification count when returning
+                        if (result == true) {
+                          setState(() {
+                            _notificationCount = _notificationService.unreadCount;
+                          });
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.all(12),
@@ -245,30 +276,31 @@ class _DiscoverPageState extends State<DiscoverPage> {
                               color: AmoraTheme.deepMidnight,
                             ),
                             // Notification badge
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(
-                                  color: AmoraTheme.sunsetRose,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 12,
-                                  minHeight: 12,
-                                ),
-                                child: const Text(
-                                  '2',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
+                            if (_notificationCount > 0)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: AmoraTheme.sunsetRose,
+                                    shape: BoxShape.circle,
                                   ),
-                                  textAlign: TextAlign.center,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 12,
+                                    minHeight: 12,
+                                  ),
+                                  child: Text(
+                                    _notificationCount > 99 ? '99+' : _notificationCount.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),

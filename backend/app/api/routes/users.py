@@ -162,8 +162,23 @@ async def get_blocked_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # This would require a blocked_users table in real implementation
-    return {"blocked_users": []}
+    from app.core.database import BlockedUser
+    
+    blocked_users = db.query(BlockedUser).filter(
+        BlockedUser.blocker_id == current_user.id
+    ).all()
+    
+    result = []
+    for blocked in blocked_users:
+        user = db.query(User).filter(User.id == blocked.blocked_id).first()
+        if user:
+            result.append({
+                'id': user.id,
+                'name': user.name,
+                'blocked_at': blocked.created_at
+            })
+    
+    return {"blocked_users": result}
 
 @router.post("/block")
 async def block_user(
@@ -171,7 +186,33 @@ async def block_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # This would require a blocked_users table in real implementation
+    from app.core.database import BlockedUser
+    from fastapi import HTTPException
+    
+    user_id = user_data.get('user_id')
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+    
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot block yourself")
+    
+    # Check if already blocked
+    existing_block = db.query(BlockedUser).filter(
+        BlockedUser.blocker_id == current_user.id,
+        BlockedUser.blocked_id == user_id
+    ).first()
+    
+    if existing_block:
+        raise HTTPException(status_code=400, detail="User already blocked")
+    
+    # Create block entry
+    new_block = BlockedUser(
+        blocker_id=current_user.id,
+        blocked_id=user_id
+    )
+    db.add(new_block)
+    db.commit()
+    
     return {"message": "User blocked successfully"}
 
 @router.delete("/block/{user_id}")
@@ -180,5 +221,18 @@ async def unblock_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # This would require a blocked_users table in real implementation
+    from app.core.database import BlockedUser
+    from fastapi import HTTPException
+    
+    blocked_user = db.query(BlockedUser).filter(
+        BlockedUser.blocker_id == current_user.id,
+        BlockedUser.blocked_id == user_id
+    ).first()
+    
+    if not blocked_user:
+        raise HTTPException(status_code=404, detail="User not blocked")
+    
+    db.delete(blocked_user)
+    db.commit()
+    
     return {"message": "User unblocked successfully"}

@@ -34,16 +34,24 @@ async def get_matches(
     matches = matches_query.order_by(Match.last_message_at.desc()).all()
     
     result = []
+    seen_users = set()  # Track unique users to avoid duplicates
+    
     for match in matches:
         # Get other user
         other_user_id = match.user2_id if match.user1_id == current_user.id else match.user1_id
+        
+        # Skip if we've already seen this user
+        if other_user_id in seen_users:
+            continue
+            
         other_user = db.query(User).filter(User.id == other_user_id).first()
         
         if other_user:
             # Apply search filter if provided
             if search and search.lower() not in other_user.name.lower():
                 continue
-                
+            
+            seen_users.add(other_user_id)
             result.append(MatchResponse(
                 id=match.id,
                 user1_id=match.user1_id,

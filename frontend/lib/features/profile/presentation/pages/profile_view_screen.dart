@@ -407,53 +407,210 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   }
 
   void _showReportDialog() {
+    String selectedReason = 'Inappropriate behavior';
+    final TextEditingController descriptionController = TextEditingController();
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Report User'),
-        content: const Text('Are you sure you want to report this user?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('User reported')),
-              );
-            },
-            child: const Text('Report'),
+          title: const Text(
+            'Report User',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
           ),
-        ],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Why are you reporting ${_user!.name}?',
+                style: const TextStyle(
+                  color: AmoraTheme.deepMidnight,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: selectedReason,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: [
+                  'Inappropriate behavior',
+                  'Fake profile',
+                  'Harassment',
+                  'Spam',
+                  'Inappropriate photos',
+                  'Other'
+                ].map((reason) => DropdownMenuItem(
+                  value: reason,
+                  child: Text(reason),
+                )).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedReason = value!;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Additional details (optional)',
+                  contentPadding: EdgeInsets.all(12),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AmoraTheme.deepMidnight,
+                ),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _submitReport(selectedReason, descriptionController.text);
+                },
+                child: const Text(
+                  'Report',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+  
+  Future<void> _submitReport(String reason, String description) async {
+    try {
+      await _apiService.reportUser(
+        reportedUserId: widget.userId,
+        reason: reason,
+        description: description.isNotEmpty ? description : null,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Report submitted for ${_user!.name}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit report: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showBlockDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Block User'),
-        content: const Text('Are you sure you want to block this user?'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text(
+          'Block User',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to block ${_user!.name}? You won\'t see their profile anymore and they won\'t be able to contact you.',
+          style: const TextStyle(
+            color: AmoraTheme.deepMidnight,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                color: AmoraTheme.deepMidnight,
+              ),
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('User blocked')),
-              );
-            },
-            child: const Text('Block'),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _blockUser();
+              },
+              child: const Text(
+                'Block',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+  
+  Future<void> _blockUser() async {
+    try {
+      await _apiService.blockUser(widget.userId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_user!.name} has been blocked'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.pop(context); // Go back after blocking
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to block user: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override

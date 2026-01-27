@@ -170,12 +170,11 @@ class SettingsService {
     }
   }
   
-  Future<List<String>> getBlockedUsers() async {
+  Future<Map<String, dynamic>> getBlockedUsers() async {
     try {
-      final response = await _apiService.getBlockedUsers();
-      return List<String>.from(response['blocked_users'] ?? []);
+      return await _apiService.getBlockedUsers();
     } catch (e) {
-      return [];
+      return {'blocked_users': []};
     }
   }
   

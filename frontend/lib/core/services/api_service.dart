@@ -400,6 +400,46 @@ class ApiService {
       throw _handleError(e);
     }
   }
+  
+  // Report & Support Methods
+  Future<void> reportUser({
+    required String reportedUserId,
+    required String reason,
+    String? description,
+  }) async {
+    try {
+      await _dio.post('/support/report', data: {
+        'reported_user_id': reportedUserId,
+        'reason': reason,
+        'description': description,
+      });
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<void> sendSupportRequest({
+    required String subject,
+    required String message,
+  }) async {
+    try {
+      await _dio.post('/support/support', data: {
+        'subject': subject,
+        'message': message,
+      });
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<List<Map<String, dynamic>>> getFAQ() async {
+    try {
+      final response = await _dio.get('/support/faq');
+      return List<Map<String, dynamic>>.from(response.data['faq']);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
   String _handleError(dynamic error) {
     if (error is DioException) {
       if (error.response != null) {

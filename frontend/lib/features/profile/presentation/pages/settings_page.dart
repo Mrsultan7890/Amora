@@ -5,6 +5,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/emergency_service.dart';
 import 'emergency_contacts_page.dart';
+import 'privacy_policy_page.dart';
+import 'terms_of_service_page.dart';
+import 'help_support_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -302,7 +305,12 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Privacy Policy',
                           'Read our privacy policy',
                           Icons.privacy_tip,
-                          () => _openUrl('https://amora.app/privacy'),
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PrivacyPolicyPage(),
+                            ),
+                          ),
                         ),
                         
                         const Divider(height: 1),
@@ -311,7 +319,12 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Terms of Service',
                           'Read our terms of service',
                           Icons.description,
-                          () => _openUrl('https://amora.app/terms'),
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const TermsOfServicePage(),
+                            ),
+                          ),
                         ),
                         
                         const Divider(height: 1),
@@ -320,7 +333,12 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Help & Support',
                           'Get help or contact support',
                           Icons.help,
-                          () => _openUrl('mailto:support@amora.app'),
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HelpSupportPage(),
+                            ),
+                          ),
                         ),
                         
                         const Divider(height: 1),
@@ -702,40 +720,103 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 Expanded(
-                  child: FutureBuilder<List<String>>(
+                  child: FutureBuilder<Map<String, dynamic>>(
                     future: _settingsService.getBlockedUsers(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       }
                       
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      if (!snapshot.hasData || 
+                          snapshot.data!['blocked_users'] == null ||
+                          (snapshot.data!['blocked_users'] as List).isEmpty) {
                         return const Center(
-                          child: Text(
-                            'No blocked users',
-                            style: TextStyle(color: AmoraTheme.deepMidnight),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.block,
+                                size: 64,
+                                color: AmoraTheme.sunsetRose,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'No blocked users',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: AmoraTheme.deepMidnight,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Users you block will appear here',
+                                style: TextStyle(
+                                  color: AmoraTheme.deepMidnight,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }
                       
+                      final blockedUsers = snapshot.data!['blocked_users'] as List;
+                      
                       return ListView.builder(
                         controller: scrollController,
-                        itemCount: snapshot.data!.length,
+                        itemCount: blockedUsers.length,
                         itemBuilder: (context, index) {
-                          final userId = snapshot.data![index];
-                          return ListTile(
-                            leading: const CircleAvatar(
-                              child: Icon(Icons.person),
+                          final blockedUser = blockedUsers[index];
+                          return Container(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
                             ),
-                            title: Text('User $userId'),
-                            trailing: TextButton(
-                              onPressed: () async {
-                                await _settingsService.unblockUser(userId);
-                                Navigator.pop(context);
-                              },
-                              child: const Text(
-                                'Unblock',
-                                style: TextStyle(color: AmoraTheme.sunsetRose),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListTile(
+                              leading: const CircleAvatar(
+                                backgroundColor: AmoraTheme.sunsetRose,
+                                child: Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              title: Text(
+                                blockedUser['name'] ?? 'Unknown User',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AmoraTheme.deepMidnight,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Blocked on ${_formatDate(blockedUser['blocked_at'])}',
+                                style: TextStyle(
+                                  color: AmoraTheme.deepMidnight.withOpacity(0.7),
+                                ),
+                              ),
+                              trailing: Container(
+                                decoration: BoxDecoration(
+                                  color: AmoraTheme.sunsetRose,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: TextButton(
+                                  onPressed: () async {
+                                    await _settingsService.unblockUser(blockedUser['id']);
+                                    setState(() {}); // Refresh the page
+                                    Navigator.pop(context);
+                                    _showBlockedUsersPage(); // Reopen to refresh
+                                  },
+                                  child: const Text(
+                                    'Unblock',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           );
@@ -774,6 +855,27 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
       }
+    }
+  }
+  
+  String _formatDate(String? dateString) {
+    if (dateString == null) return 'Unknown';
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      
+      if (difference.inDays == 0) {
+        return 'Today';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else {
+        return '${date.day}/${date.month}/${date.year}';
+      }
+    } catch (e) {
+      return 'Unknown';
     }
   }
 }

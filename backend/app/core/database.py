@@ -104,6 +104,15 @@ class Report(Base):
     status = Column(String(20), default="pending")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class BlockedUser(Base):
+    __tablename__ = "blocked_users"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    blocker_id = Column(String, ForeignKey("users.id"), nullable=False)
+    blocked_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 # Dependency to get DB session
 def get_db():
     db = SessionLocal()
