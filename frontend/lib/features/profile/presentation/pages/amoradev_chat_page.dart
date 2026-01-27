@@ -238,8 +238,14 @@ class _AmoraDevChatPageState extends State<AmoraDevChatPage> {
         final qrCode = qrValidationResult.qrCode!;
         final painter = QrPainter.withQr(
           qr: qrCode,
-          color: const Color(0xFF000000),
-          emptyColor: const Color(0xFFFFFFFF),
+          eyeStyle: const QrEyeStyle(
+            eyeShape: QrEyeShape.square,
+            color: Color(0xFF000000),
+          ),
+          dataModuleStyle: const QrDataModuleStyle(
+            dataModuleShape: QrDataModuleShape.square,
+            color: Color(0xFF000000),
+          ),
           gapless: false,
         );
 
