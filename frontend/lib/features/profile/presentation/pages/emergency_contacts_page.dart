@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_emergency_service.dart';
 import '../../../../core/services/emergency_service.dart';
+import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/sms_service.dart';
 import '../../../../shared/models/emergency_contact_model.dart';
 
@@ -144,9 +145,12 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                       value: _emergencyService.isEnabled,
                       onChanged: (value) async {
                         await _emergencyService.setEnabled(value);
-                        // Also update emergency service
+                        // Also update main emergency service
                         final EmergencyService emergencyService = EmergencyService.instance;
                         await emergencyService.setEmergencyEnabled(value);
+                        // Also update settings service
+                        final SettingsService settingsService = SettingsService.instance;
+                        await settingsService.setEmergencyShakeEnabled(value);
                         
                         setState(() {});
                         

@@ -11,6 +11,9 @@ class UserModel extends Equatable {
   final String bio;
   final List<String> interests;
   final bool isVerified;
+  final String verificationStatus;
+  final String? verificationBadgeColor;
+  final String? verificationType;
   final bool isOnline;
   final DateTime lastSeen;
   final DateTime createdAt;
@@ -33,6 +36,9 @@ class UserModel extends Equatable {
     required this.bio,
     required this.interests,
     required this.isVerified,
+    this.verificationStatus = "unverified",
+    this.verificationBadgeColor,
+    this.verificationType,
     required this.isOnline,
     required this.lastSeen,
     required this.createdAt,
@@ -56,6 +62,9 @@ class UserModel extends Equatable {
     String? bio,
     List<String>? interests,
     bool? isVerified,
+    String? verificationStatus,
+    String? verificationBadgeColor,
+    String? verificationType,
     bool? isOnline,
     DateTime? lastSeen,
     DateTime? createdAt,
@@ -78,6 +87,9 @@ class UserModel extends Equatable {
       bio: bio ?? this.bio,
       interests: interests ?? this.interests,
       isVerified: isVerified ?? this.isVerified,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      verificationBadgeColor: verificationBadgeColor ?? this.verificationBadgeColor,
+      verificationType: verificationType ?? this.verificationType,
       isOnline: isOnline ?? this.isOnline,
       lastSeen: lastSeen ?? this.lastSeen,
       createdAt: createdAt ?? this.createdAt,
@@ -103,6 +115,9 @@ class UserModel extends Equatable {
       'bio': bio,
       'interests': interests,
       'is_verified': isVerified,
+      'verification_status': verificationStatus,
+      'verification_badge_color': verificationBadgeColor,
+      'verification_type': verificationType,
       'is_online': isOnline,
       'last_seen': lastSeen.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
@@ -132,6 +147,9 @@ class UserModel extends Equatable {
       bio: json['bio']?.toString() ?? '',
       interests: json['interests'] != null ? List<String>.from(json['interests']) : <String>[],
       isVerified: json['is_verified'] ?? false,
+      verificationStatus: json['verification_status'] ?? "unverified",
+      verificationBadgeColor: json['verification_badge_color'],
+      verificationType: json['verification_type'],
       isOnline: json['is_online'] ?? false,
       lastSeen: json['last_seen'] != null ? DateTime.parse(json['last_seen']) : DateTime.now(),
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
@@ -168,7 +186,8 @@ class UserModel extends Equatable {
   @override
   List<Object?> get props => [
     id, email, name, age, gender, photos, bio, interests,
-    isVerified, isOnline, lastSeen, createdAt,
+    isVerified, verificationStatus, verificationBadgeColor, verificationType,
+    isOnline, lastSeen, createdAt,
     job, education, height, relationshipGoal, languages, isPrivate,
     latitude, longitude,
   ];

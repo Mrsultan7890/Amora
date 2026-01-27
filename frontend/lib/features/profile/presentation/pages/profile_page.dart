@@ -105,7 +105,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       GestureDetector(
-                        onTap: () => context.go('/settings'),
+                        onTap: () => context.go('/profile/settings'),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: AmoraTheme.glassmorphism(
@@ -129,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                       ),
                       
                       GestureDetector(
-                        onTap: () => context.go('/edit-profile'),
+                        onTap: () => context.go('/profile/edit'),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: AmoraTheme.glassmorphism(
@@ -422,7 +422,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                         icon: Icons.location_on,
                         title: 'Discovery Settings',
                         subtitle: 'Distance, age range, and more',
-                        onTap: () => context.go('/settings'),
+                        onTap: () => context.go('/profile/settings'),
                       ).animate()
                         .fadeIn(delay: 1400.ms, duration: 600.ms)
                         .slideX(begin: -0.3, end: 0),

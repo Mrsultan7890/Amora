@@ -210,8 +210,237 @@ class _DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  void _showBoostDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.all(20),
+          decoration: AmoraTheme.glassmorphism(
+            color: Colors.white,
+            borderRadius: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  gradient: AmoraTheme.primaryGradient,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.flash_on,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Boost Your Profile',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Get 10x more visibility!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AmoraTheme.deepMidnight,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Benefits
+                    _buildBenefitItem(Icons.trending_up, 'Be the top profile for 30 minutes'),
+                    _buildBenefitItem(Icons.visibility, 'Get 10x more profile views'),
+                    _buildBenefitItem(Icons.favorite, 'Increase your match rate'),
+                    _buildBenefitItem(Icons.star, 'Stand out from the crowd'),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Ad Banner Placeholder
+                    Container(
+                      width: double.infinity,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.ads_click,
+                            color: Colors.grey.shade600,
+                            size: 24,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Advertisement Space',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Free Boost Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: AmoraTheme.primaryGradient,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _activateBoost();
+                          },
+                          child: const Text(
+                            'Get Free Boost (Watch Ad)',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    Text(
+                      'Watch a short ad to boost your profile for free!',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AmoraTheme.deepMidnight.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildBenefitItem(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: AmoraTheme.sunsetRose,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AmoraTheme.deepMidnight,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _activateBoost() {
+    // Simulate ad watching and boost activation
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: AmoraTheme.glassmorphism(
+            color: Colors.white,
+            borderRadius: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.flash_on,
+                color: AmoraTheme.warmGold,
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Boost Activated!',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AmoraTheme.deepMidnight,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Your profile is now boosted for 30 minutes!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AmoraTheme.deepMidnight,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Awesome!',
+                  style: TextStyle(
+                    color: AmoraTheme.sunsetRose,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -226,15 +455,21 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: AmoraTheme.glassmorphism(
-                        color: Colors.white,
-                        borderRadius: 16,
-                      ),
-                      child: const Icon(
-                        Icons.tune,
-                        color: AmoraTheme.deepMidnight,
+                    GestureDetector(
+                      onTap: () {
+                        // Show boost/premium features
+                        _showBoostDialog();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: AmoraTheme.glassmorphism(
+                          color: Colors.white,
+                          borderRadius: 16,
+                        ),
+                        child: const Icon(
+                          Icons.flash_on,
+                          color: AmoraTheme.warmGold,
+                        ),
                       ),
                     ),
                     

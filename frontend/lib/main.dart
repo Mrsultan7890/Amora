@@ -129,16 +129,18 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfilePage(),
+          routes: [
+            GoRoute(
+              path: 'edit',
+              builder: (context, state) => const EditProfilePage(),
+            ),
+            GoRoute(
+              path: 'settings',
+              builder: (context, state) => const SettingsPage(),
+            ),
+          ],
         ),
       ],
-    ),
-    GoRoute(
-      path: '/edit-profile',
-      builder: (context, state) => const EditProfilePage(),
-    ),
-    GoRoute(
-      path: '/settings',
-      builder: (context, state) => const SettingsPage(),
     ),
   ],
 );

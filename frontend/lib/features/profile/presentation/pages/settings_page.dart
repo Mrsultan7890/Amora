@@ -8,6 +8,7 @@ import 'emergency_contacts_page.dart';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
 import 'help_support_page.dart';
+import 'amoradev_chat_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -84,7 +85,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => context.pop(),
+                      onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(
                         Icons.arrow_back_ios,
                         color: AmoraTheme.deepMidnight,
@@ -213,7 +214,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Show Online Status',
                           'Let others see when you\'re online',
                           _showOnlineStatus,
-                          (value) => setState(() => _showOnlineStatus = value),
+                          (value) async {
+                            setState(() => _showOnlineStatus = value);
+                            await _settingsService.setShowOnlineStatus(value);
+                          },
                         ),
                         
                         const Divider(height: 1),
@@ -225,9 +229,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           (value) async {
                             setState(() => _emergencyShakeEnabled = value);
                             await _settingsService.setEmergencyShakeEnabled(value);
-                            // Update emergency service
+                            // Update both emergency services
                             final EmergencyService emergencyService = EmergencyService.instance;
                             await emergencyService.setEmergencyEnabled(value);
+                            final OfflineEmergencyService offlineService = OfflineEmergencyService.instance;
+                            await offlineService.setEnabled(value);
                             
                             // Show feedback
                             if (mounted) {
@@ -252,7 +258,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Show Distance',
                           'Display your distance to other users',
                           _showDistance,
-                          (value) => setState(() => _showDistance = value),
+                          (value) async {
+                            setState(() => _showDistance = value);
+                            await _settingsService.setShowDistance(value);
+                          },
                         ),
                         
                         const Divider(height: 1),
@@ -261,7 +270,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Show Me on Amora',
                           'Make your profile discoverable',
                           _showMeOnAmora,
-                          (value) => setState(() => _showMeOnAmora = value),
+                          (value) async {
+                            setState(() => _showMeOnAmora = value);
+                            await _settingsService.setShowMeOnAmora(value);
+                          },
                         ),
                         
                         const Divider(height: 1),
@@ -270,7 +282,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Incognito Mode',
                           'Only people you like can see your profile',
                           _incognitoMode,
-                          (value) => setState(() => _incognitoMode = value),
+                          (value) async {
+                            setState(() => _incognitoMode = value);
+                            await _settingsService.setIncognitoMode(value);
+                          },
                         ),
                       ]).animate()
                         .fadeIn(delay: 600.ms, duration: 600.ms)
@@ -282,6 +297,20 @@ class _SettingsPageState extends State<SettingsPage> {
                       _buildSectionHeader('Account'),
                       
                       _buildSettingsCard([
+                        _buildActionSetting(
+                          'Get Verified',
+                          'Chat with AmoraDev for verification',
+                          Icons.verified,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AmoraDevChatPage(),
+                            ),
+                          ),
+                        ),
+                        
+                        const Divider(height: 1),
+                        
                         _buildActionSetting(
                           'Emergency Contacts',
                           'Manage offline emergency contacts',

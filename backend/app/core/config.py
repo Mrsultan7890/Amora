@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     TELEGRAM_SUPPORT_CHAT_ID: str = ""
     TELEGRAM_STORAGE_BOT_TOKEN: str = ""
     TELEGRAM_STORAGE_CHAT_ID: str = ""
+    TELEGRAM_VERIFICATION_BOT_TOKEN: str = ""
+    TELEGRAM_VERIFICATION_CHAT_ID: str = ""
     
     # App
     DEBUG: bool = False

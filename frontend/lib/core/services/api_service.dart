@@ -440,6 +440,72 @@ class ApiService {
       throw _handleError(e);
     }
   }
+  // Features Methods
+  Future<Map<String, dynamic>> activateBoost({
+    int durationMinutes = 30,
+    String boostType = 'free',
+  }) async {
+    try {
+      final response = await _dio.post('/features/boost', data: {
+        'duration_minutes': durationMinutes,
+        'boost_type': boostType,
+      });
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<Map<String, dynamic>> getBoostStatus() async {
+    try {
+      final response = await _dio.get('/features/boost/status');
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<Map<String, dynamic>> getSortedMatches(String sortBy) async {
+    try {
+      final response = await _dio.get('/features/matches/sorted', queryParameters: {
+        'sort_by': sortBy,
+      });
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  // Verification Methods
+  Future<Map<String, dynamic>> checkVerificationEligibility() async {
+    try {
+      final response = await _dio.get('/verification/check-eligibility');
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> requestVerification(String badgeColor) async {
+    try {
+      final response = await _dio.post('/verification/request', data: {
+        'badge_color': badgeColor,
+      });
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getVerificationStatus() async {
+    try {
+      final response = await _dio.get('/verification/status');
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
   String _handleError(dynamic error) {
     if (error is DioException) {
       if (error.response != null) {

@@ -165,9 +165,14 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               Stack(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 20,
-                    child: Icon(Icons.person),
+                    backgroundImage: widget.match.otherUser?.photos.isNotEmpty == true
+                        ? NetworkImage(widget.match.otherUser!.photos.first)
+                        : null,
+                    child: widget.match.otherUser?.photos.isEmpty != false
+                        ? const Icon(Icons.person)
+                        : null,
                   ),
                   Positioned(
                     bottom: 0,
@@ -397,9 +402,14 @@ class _ChatScreenState extends State<ChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (!isMe) ...[
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 16,
-                    child: Icon(Icons.person, size: 16),
+                    backgroundImage: widget.match.otherUser?.photos.isNotEmpty == true
+                        ? NetworkImage(widget.match.otherUser!.photos.first)
+                        : null,
+                    child: widget.match.otherUser?.photos.isEmpty != false
+                        ? const Icon(Icons.person, size: 16)
+                        : null,
                   ),
                   const SizedBox(width: 8),
                 ],

@@ -102,15 +102,20 @@ class _MatchesPageState extends State<MatchesPage> {
                       ),
                     ),
                     
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: AmoraTheme.glassmorphism(
-                        color: Colors.white,
-                        borderRadius: 16,
-                      ),
-                      child: const Icon(
-                        Icons.filter_list,
-                        color: AmoraTheme.deepMidnight,
+                    GestureDetector(
+                      onTap: () {
+                        _showSortOptions();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: AmoraTheme.glassmorphism(
+                          color: Colors.white,
+                          borderRadius: 16,
+                        ),
+                        child: const Icon(
+                          Icons.sort,
+                          color: AmoraTheme.deepMidnight,
+                        ),
                       ),
                     ),
                   ],
@@ -214,9 +219,14 @@ class _MatchesPageState extends State<MatchesPage> {
         contentPadding: const EdgeInsets.all(16),
         leading: Stack(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 28,
-              child: Icon(Icons.person, size: 28),
+              backgroundImage: match.otherUser?.photos.isNotEmpty == true
+                  ? NetworkImage(match.otherUser!.photos.first)
+                  : null,
+              child: match.otherUser?.photos.isEmpty != false
+                  ? const Icon(Icons.person, size: 28)
+                  : null,
             ),
             Positioned(
               bottom: 0,
@@ -329,6 +339,198 @@ class _MatchesPageState extends State<MatchesPage> {
     }
   }
 
+  void _showSortOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                gradient: AmoraTheme.primaryGradient,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.sort,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Sort Your Matches',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Sort Options
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildSortOption(
+                    Icons.access_time,
+                    'Recent Activity',
+                    'Sort by latest messages',
+                    () => _sortMatches('recent'),
+                  ),
+                  _buildSortOption(
+                    Icons.favorite,
+                    'New Matches',
+                    'Show newest matches first',
+                    () => _sortMatches('new'),
+                  ),
+                  _buildSortOption(
+                    Icons.chat,
+                    'Most Active',
+                    'Sort by conversation activity',
+                    () => _sortMatches('messages'),
+                  ),
+                  _buildSortOption(
+                    Icons.star,
+                    'Super Likes',
+                    'Show super liked matches first',
+                    () => _sortMatches('super'),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildSortOption(IconData icon, String title, String subtitle, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: AmoraTheme.glassmorphism(
+        color: Colors.white,
+        borderRadius: 12,
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AmoraTheme.sunsetRose.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: AmoraTheme.sunsetRose,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AmoraTheme.deepMidnight,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 12,
+            color: AmoraTheme.deepMidnight.withOpacity(0.7),
+          ),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: AmoraTheme.sunsetRose,
+        ),
+        onTap: () {
+          Navigator.pop(context);
+          onTap();
+          _showSortConfirmation(title);
+        },
+      ),
+    );
+  }
+  
+  void _showSortConfirmation(String sortType) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text('Sorted by $sortType'),
+          ],
+        ),
+        backgroundColor: AmoraTheme.sunsetRose,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+  
+  void _sortMatches(String sortType) {
+    setState(() {
+      switch (sortType) {
+        case 'recent':
+          _filteredMatches.sort((a, b) => b.lastMessageAt.compareTo(a.lastMessageAt));
+          break;
+        case 'new':
+          _filteredMatches.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          break;
+        case 'messages':
+          _filteredMatches.sort((a, b) => (b.lastMessage?.length ?? 0).compareTo(a.lastMessage?.length ?? 0));
+          break;
+        case 'super':
+          // Sort super likes first (placeholder logic)
+          _filteredMatches.sort((a, b) => (b.isMatch ? 1 : 0).compareTo(a.isMatch ? 1 : 0));
+          break;
+      }
+    });
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -417,8 +619,13 @@ class MatchSearchDelegate extends SearchDelegate<MatchModel?> {
             borderRadius: 16,
           ),
           child: ListTile(
-            leading: const CircleAvatar(
-              child: Icon(Icons.person),
+            leading: CircleAvatar(
+              backgroundImage: match.otherUser?.photos.isNotEmpty == true
+                  ? NetworkImage(match.otherUser!.photos.first)
+                  : null,
+              child: match.otherUser?.photos.isEmpty != false
+                  ? const Icon(Icons.person)
+                  : null,
             ),
             title: Text(
               match.otherUser?.name ?? 'Unknown User',

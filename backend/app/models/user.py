@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Float
 from sqlalchemy.sql import func
+from datetime import datetime
 from app.core.database import Base
 import uuid
 
@@ -24,5 +25,12 @@ class User(Base):
     is_online = Column(Boolean, default=False)
     last_seen = Column(DateTime, default=func.now())
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    boost_expires_at = Column(DateTime)
+    boost_type = Column(String(20))
+    verification_status = Column(String(20), default="unverified")  # unverified, pending, verified, rejected
+    verification_requested_at = Column(DateTime)
+    verification_badge_color = Column(String(10), default="blue")  # blue, pink, purple, gold
+    verification_type = Column(String(20), default="basic")  # basic, donor
+    profile_completion = Column(Integer, default=0)  # percentage
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

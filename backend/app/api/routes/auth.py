@@ -43,8 +43,11 @@ class UserResponse(BaseModel):
     photos: list[str] = []
     interests: list[str] = []
     is_verified: bool
+    verification_status: str = "unverified"
+    verification_badge_color: Optional[str] = "blue"
+    verification_type: Optional[str] = "basic"
     is_online: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
@@ -92,8 +95,11 @@ class UserResponse(BaseModel):
             photos=photos,
             interests=interests,
             is_verified=user.is_verified,
+            verification_status=user.verification_status,
+            verification_badge_color=user.verification_badge_color,
+            verification_type=user.verification_type,
             is_online=user.is_online,
-            created_at=user.created_at,
+            created_at=user.created_at or datetime.utcnow(),
             latitude=user.latitude,
             longitude=user.longitude
         )
@@ -157,7 +163,9 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
             name=user_data.name,
             age=user_data.age,
             gender=user_data.gender,
-            is_online=True
+            is_online=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         
         print(f"Adding user to database")

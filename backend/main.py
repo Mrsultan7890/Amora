@@ -8,7 +8,7 @@ from typing import Dict, List
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.routes import auth, users, swipes, matches, messages, upload, notifications, emergency, support
+from app.api.routes import auth, users, swipes, matches, messages, upload, notifications, emergency, support, features, verification
 from app.services.websocket_manager import ConnectionManager
 
 # Create tables
@@ -52,6 +52,8 @@ app.include_router(upload.router, prefix="/api/upload", tags=["Upload"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(emergency.router, prefix="/api/emergency", tags=["Emergency"])
 app.include_router(support.router, prefix="/api/support", tags=["Support"])
+app.include_router(features.router, prefix="/api/features", tags=["Features"])
+app.include_router(verification.router, prefix="/api/verification", tags=["Verification"])
 
 @app.get("/")
 async def root():
