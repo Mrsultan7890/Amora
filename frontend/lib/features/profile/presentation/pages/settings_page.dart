@@ -8,7 +8,6 @@ import 'emergency_contacts_page.dart';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
 import 'help_support_page.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

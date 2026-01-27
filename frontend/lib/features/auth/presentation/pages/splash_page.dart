@@ -194,7 +194,7 @@ class _SplashPageState extends State<SplashPage> {
                     ),
                   ).animate()
                     .fadeIn(delay: 1500.ms, duration: 1000.ms)
-                    .typewriter(duration: 1500.ms),
+                    .slideX(begin: -0.3, end: 0, duration: 1500.ms),
                   
                   const SizedBox(height: 100),
                   
