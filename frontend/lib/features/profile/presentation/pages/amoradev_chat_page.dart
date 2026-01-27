@@ -101,7 +101,6 @@ class _AmoraDevChatPageState extends State<AmoraDevChatPage> {
       _showVerificationBenefits();
     } else if (option.contains('Badge')) {
       _selectedBadgeColor = option.toLowerCase().split(' ')[0];
-      _showPaymentOptions = true;
       _showDonationPrompt();
     } else if (option == 'Skip donation (7-10 days)') {
       _submitVerification(false);
