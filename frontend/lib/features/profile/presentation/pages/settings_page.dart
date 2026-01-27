@@ -842,22 +842,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
   
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not open $url'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-  
   String _formatDate(String? dateString) {
     if (dateString == null) return 'Unknown';
     try {
