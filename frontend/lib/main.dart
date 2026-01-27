@@ -115,6 +115,10 @@ final GoRouter _router = GoRouter(
       path: '/signup',
       builder: (context, state) => const SignupPage(),
     ),
+    GoRoute(
+      path: '/edit-profile',
+      builder: (context, state) => const EditProfilePage(),
+    ),
     ShellRoute(
       builder: (context, state, child) => MainNavigation(child: child),
       routes: [
