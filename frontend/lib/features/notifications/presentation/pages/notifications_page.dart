@@ -12,6 +12,7 @@ class NotificationsPage extends StatefulWidget {
 
 class _NotificationsPageState extends State<NotificationsPage> {
   final ApiService _apiService = ApiService.instance;
+  final NotificationService _notificationService = NotificationService.instance;
   List<Map<String, dynamic>> _notifications = [];
   bool _isLoading = true;
 
@@ -24,13 +25,39 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Future<void> _loadNotifications() async {
     try {
       print('Loading notifications...');
-      final response = await _apiService.getNotifications();
-      print('Notifications response: $response');
+      
+      // Try to load from backend first
+      try {
+        final response = await _apiService.getNotifications();
+        print('Backend notifications response: $response');
+        setState(() {
+          _notifications = List<Map<String, dynamic>>.from(response['notifications'] ?? []);
+          _isLoading = false;
+        });
+        print('Loaded ${_notifications.length} notifications from backend');
+        return;
+      } catch (e) {
+        print('Backend notifications failed: $e');
+        // Fall back to local notifications
+      }
+      
+      // Load from local notification service as fallback
+      await _notificationService.initialize();
+      final localNotifications = _notificationService.notifications;
+      
       setState(() {
-        _notifications = List<Map<String, dynamic>>.from(response['notifications'] ?? []);
+        _notifications = localNotifications.map((n) => {
+          'id': n.id,
+          'type': n.type.name,
+          'title': n.title,
+          'message': n.message,
+          'timestamp': n.timestamp.toIso8601String(),
+          'read': n.isRead,
+        }).toList();
         _isLoading = false;
       });
-      print('Loaded ${_notifications.length} notifications');
+      print('Loaded ${_notifications.length} local notifications');
+      
     } catch (e) {
       print('Error loading notifications: $e');
       setState(() {
@@ -41,7 +68,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Future<void> _markAsRead(String notificationId) async {
     try {
-      await _apiService.markNotificationRead(notificationId);
+      // Try backend first
+      try {
+        await _apiService.markNotificationRead(notificationId);
+        print('Marked notification as read on backend');
+      } catch (e) {
+        print('Backend mark read failed: $e');
+        // Fall back to local
+        await _notificationService.markAsRead(notificationId);
+        print('Marked notification as read locally');
+      }
+      
       _loadNotifications();
     } catch (e) {
       print('Error marking notification as read: $e');

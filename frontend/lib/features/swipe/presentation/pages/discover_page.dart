@@ -16,7 +16,7 @@ class DiscoverPage extends StatefulWidget {
   State<DiscoverPage> createState() => _DiscoverPageState();
 }
 
-class _DiscoverPageState extends State<DiscoverPage> {
+class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClientMixin {
   final CardSwiperController _cardController = CardSwiperController();
   final ApiService _apiService = ApiService.instance;
   final NotificationService _notificationService = NotificationService.instance;
@@ -26,10 +26,26 @@ class _DiscoverPageState extends State<DiscoverPage> {
   int _notificationCount = 0;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
     _loadProfiles();
     _loadNotifications();
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh profiles when page becomes visible again
+    final route = ModalRoute.of(context);
+    if (route != null && route.isCurrent && route.settings.name == '/discover') {
+      if (_profiles.isEmpty && !_isLoading) {
+        print('🔄 Discover page visible - refreshing profiles');
+        _loadProfiles();
+      }
+    }
   }
 
   Future<void> _loadNotifications() async {
@@ -444,6 +460,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -582,6 +600,23 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: AmoraTheme.deepMidnight.withOpacity(0.7),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    gradient: AmoraTheme.primaryGradient,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: TextButton(
+                                    onPressed: _loadProfiles,
+                                    child: const Text(
+                                      'Refresh',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],

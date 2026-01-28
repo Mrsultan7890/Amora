@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:math';
 import 'api_service.dart';
@@ -13,9 +14,12 @@ class EmergencyService {
   EmergencyService._();
   
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
-  bool _isEmergencyEnabled = false;
+  bool _isEmergencyEnabled = true;
   bool _isShakeDetected = false;
   DateTime? _lastShakeTime;
+  
+  // Settings key
+  static const String _emergencyEnabledKey = 'emergency_shake_enabled';
   
   // Shake detection parameters
   static const double _shakeThreshold = 15.0; // Increased threshold
@@ -33,20 +37,26 @@ class EmergencyService {
   }
   
   Future<void> _loadEmergencySettings() async {
-    // Load from shared preferences
-    _isEmergencyEnabled = true; // Default enabled
+    final prefs = await SharedPreferences.getInstance();
+    _isEmergencyEnabled = prefs.getBool(_emergencyEnabledKey) ?? true;
+    print('🚨 EmergencyService: Loaded settings - enabled: $_isEmergencyEnabled');
   }
   
   Future<void> setEmergencyEnabled(bool enabled) async {
+    print('🚨 EmergencyService: Setting emergency enabled to: $enabled');
     _isEmergencyEnabled = enabled;
+    
+    // Save to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_emergencyEnabledKey, enabled);
     
     if (enabled) {
       _startShakeDetection();
+      print('🚨 EmergencyService: Shake detection STARTED');
     } else {
       _stopShakeDetection();
+      print('🚨 EmergencyService: Shake detection STOPPED');
     }
-    
-    // Save to shared preferences
   }
   
   void _startShakeDetection() {
@@ -60,12 +70,23 @@ class EmergencyService {
   }
   
   void _stopShakeDetection() {
+    print('🚨 EmergencyService: Stopping shake detection...');
     _accelerometerSubscription?.cancel();
     _accelerometerSubscription = null;
+    print('🚨 EmergencyService: Shake detection stopped');
   }
   
   void _detectShake(AccelerometerEvent event) {
-    if (!_isEmergencyEnabled) return;
+    if (!_isEmergencyEnabled) {
+      // Debug: Show when shake is detected but disabled
+      double acceleration = sqrt(
+        event.x * event.x + event.y * event.y + event.z * event.z
+      );
+      if (acceleration > _shakeThreshold) {
+        print('🚨 SHAKE DETECTED BUT EMERGENCY DISABLED! Acceleration: ${acceleration.toStringAsFixed(2)}');
+      }
+      return;
+    }
     
     // Calculate shake intensity
     double acceleration = sqrt(
