@@ -143,6 +143,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       );
     }
   }
+  
 
   Future<void> _markAsRead(String notificationId) async {
     try {
