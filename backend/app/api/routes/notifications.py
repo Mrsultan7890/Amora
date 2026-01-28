@@ -14,50 +14,65 @@ router = APIRouter()
 
 @router.get("/")
 async def get_notifications(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Get user notifications based on matches and messages"""
     
-    # Get user's matches for match notifications
-    matches_query = db.execute(
-        text("SELECT * FROM matches WHERE user1_id = :user_id OR user2_id = :user_id ORDER BY created_at DESC LIMIT 5"),
-        {"user_id": current_user.id}
-    ).fetchall()
-    
-    notifications = []
-    unread_count = 0
-    
-    # Add match notifications
-    for match in matches_query:
-        other_user_id = match[2] if match[1] == current_user.id else match[1]
-        other_user = db.query(User).filter(User.id == other_user_id).first()
+    try:
+        # Get user's matches for match notifications
+        matches_query = db.execute(
+            text("SELECT * FROM matches WHERE user1_id = :user_id OR user2_id = :user_id ORDER BY created_at DESC LIMIT 5"),
+            {"user_id": current_user.id}
+        ).fetchall()
         
-        if other_user:
-            notifications.append({
-                "id": f"match_{match[0]}",
-                "type": "match",
-                "title": "New Match!",
-                "message": f"You have a new match with {other_user.name}",
-                "timestamp": match[3],  # created_at
-                "read": False
-            })
-            unread_count += 1
-    
-    # Add sample message notifications
-    notifications.extend([
-        {
-            "id": "msg_1",
-            "type": "message",
-            "title": "New Message",
-            "message": "Someone sent you a message",
-            "timestamp": datetime.now().isoformat(),
-            "read": False
-        }
-    ])
-    unread_count += 1
-    
-    return {"notifications": notifications, "unread_count": unread_count}
+        notifications = []
+        unread_count = 0
+        
+        # Add match notifications
+        for match in matches_query:
+            other_user_id = match[2] if match[1] == current_user.id else match[1]
+            other_user = db.query(User).filter(User.id == other_user_id).first()
+            
+            if other_user:
+                notifications.append({
+                    "id": f"match_{match[0]}",
+                    "type": "match",
+                    "title": "New Match! 💕",
+                    "message": f"You have a new match with {other_user.name}",
+                    "timestamp": match[3].isoformat() if hasattr(match[3], 'isoformat') else str(match[3]),
+                    "read": False
+                })
+                unread_count += 1
+        
+        # Add sample notifications if no matches
+        if not notifications:
+            notifications.extend([
+                {
+                    "id": "welcome_1",
+                    "type": "general",
+                    "title": "Welcome to Amora! 🌹",
+                    "message": "Complete your profile to get more matches",
+                    "timestamp": datetime.now().isoformat(),
+                    "read": False
+                },
+                {
+                    "id": "tip_1",
+                    "type": "general",
+                    "title": "Pro Tip 💡",
+                    "message": "Add more photos to increase your match rate by 40%",
+                    "timestamp": datetime.now().isoformat(),
+                    "read": False
+                }
+            ])
+            unread_count += 2
+        
+        return {"notifications": notifications, "unread_count": unread_count}
+        
+    except Exception as e:
+        print(f"Error getting notifications: {e}")
+        # Return empty notifications on error
+        return {"notifications": [], "unread_count": 0}
 
 @router.put("/{notification_id}/read")
 async def mark_notification_read(
