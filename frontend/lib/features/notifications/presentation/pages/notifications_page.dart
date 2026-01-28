@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/notification_service.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
