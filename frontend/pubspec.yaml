@@ -51,7 +51,7 @@ dependencies:
   
   # Utils
   intl: ^0.18.1
-  uuid: ^4.1.0
+  uuid: ^3.0.7
   url_launcher: ^6.2.1
   
   # QR Code for payments
