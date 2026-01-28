@@ -43,151 +43,144 @@ class _GameLobbyPageState extends State<GameLobbyPage> {
                 
                 const SizedBox(height: 40),
                 
-                // Game selection
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                      // Truth or Dare Game Card
+                // Truth or Dare Game Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: AmoraTheme.glassmorphism(color: Colors.white, borderRadius: 20),
+                  child: Column(
+                    children: [
                       Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: AmoraTheme.glassmorphism(color: Colors.white, borderRadius: 20),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                gradient: AmoraTheme.primaryGradient,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.psychology, color: Colors.white, size: 40),
-                            ),
-                            
-                            const SizedBox(height: 16),
-                            
-                            const Text(
-                              'Truth or Dare',
-                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AmoraTheme.deepMidnight),
-                            ),
-                            
-                            const SizedBox(height: 8),
-                            
-                            Text(
-                              'Spin the bottle and ask questions!\nPerfect for couples and friends.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 16, color: AmoraTheme.deepMidnight.withOpacity(0.7)),
-                            ),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Features
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildFeature(Icons.people, '2-4 Players'),
-                                _buildFeature(Icons.mic, 'Voice Chat'),
-                                _buildFeature(Icons.favorite, 'Love Theme'),
-                              ],
-                            ),
-                          ],
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          gradient: AmoraTheme.primaryGradient,
+                          shape: BoxShape.circle,
                         ),
-                      ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.3, end: 0),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // Action buttons
-                      Column(
-                        children: [
-                          // Create Room
-                          SizedBox(
-                            width: double.infinity,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: AmoraTheme.primaryGradient,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: TextButton(
-                                onPressed: _createRoom,
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                ),
-                                child: const Text(
-                                  'Create New Room',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ).animate(delay: 200.ms).fadeIn(duration: 600.ms).slideX(begin: -0.3, end: 0),
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Join Room
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: AmoraTheme.sunsetRose, width: 2),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: TextButton(
-                              onPressed: _showJoinRoomDialog,
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              child: const Text(
-                                'Join Existing Room',
-                                style: TextStyle(
-                                  color: AmoraTheme.sunsetRose,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ).animate(delay: 400.ms).fadeIn(duration: 600.ms).slideX(begin: 0.3, end: 0),
-                        ],
+                        child: const Icon(Icons.psychology, color: Colors.white, size: 40),
                       ),
                       
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
                       
-                      // Instructions
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AmoraTheme.sunsetRose.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.info_outline, color: AmoraTheme.sunsetRose),
-                                SizedBox(width: 8),
-                                Text(
-                                  'How to Play',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: AmoraTheme.deepMidnight),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '1. Create or join a room with friends\n'
-                              '2. Enable voice chat for better experience\n'
-                              '3. Spin the bottle to select a player\n'
-                              '4. Selected player asks a question\n'
-                              '5. Everyone answers and has fun!',
-                              style: TextStyle(fontSize: 14, color: AmoraTheme.deepMidnight.withOpacity(0.8)),
-                            ),
-                          ],
-                        ),
-                      ).animate(delay: 600.ms).fadeIn(duration: 600.ms).slideY(begin: 0.3, end: 0),
+                      const Text(
+                        'Truth or Dare',
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AmoraTheme.deepMidnight),
+                      ),
                       
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 8),
+                      
+                      Text(
+                        'Spin the bottle and ask questions!\nPerfect for couples and friends.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: AmoraTheme.deepMidnight.withOpacity(0.7)),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Features
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildFeature(Icons.people, '2-4 Players'),
+                          _buildFeature(Icons.mic, 'Voice Chat'),
+                          _buildFeature(Icons.favorite, 'Love Theme'),
+                        ],
+                      ),
                     ],
                   ),
+                ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.3, end: 0),
+                
+                const SizedBox(height: 32),
+                
+                // Action buttons
+                Column(
+                  children: [
+                    // Create Room
+                    SizedBox(
+                      width: double.infinity,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: AmoraTheme.primaryGradient,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: TextButton(
+                          onPressed: _createRoom,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: const Text(
+                            'Create New Room',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ).animate(delay: 200.ms).fadeIn(duration: 600.ms).slideX(begin: -0.3, end: 0),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Join Room
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AmoraTheme.sunsetRose, width: 2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: TextButton(
+                        onPressed: _showJoinRoomDialog,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text(
+                          'Join Existing Room',
+                          style: TextStyle(
+                            color: AmoraTheme.sunsetRose,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ).animate(delay: 400.ms).fadeIn(duration: 600.ms).slideX(begin: 0.3, end: 0),
+                  ],
                 ),
+                
+                const SizedBox(height: 32),
+                
+                // Instructions
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AmoraTheme.sunsetRose.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.info_outline, color: AmoraTheme.sunsetRose),
+                          SizedBox(width: 8),
+                          Text(
+                            'How to Play',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: AmoraTheme.deepMidnight),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '1. Create or join a room with friends\n'
+                        '2. Enable voice chat for better experience\n'
+                        '3. Spin the bottle to select a player\n'
+                        '4. Selected player asks a question\n'
+                        '5. Everyone answers and has fun!',
+                        style: TextStyle(fontSize: 14, color: AmoraTheme.deepMidnight.withOpacity(0.8)),
+                      ),
+                    ],
+                  ),
+                ).animate(delay: 600.ms).fadeIn(duration: 600.ms).slideY(begin: 0.3, end: 0),
+                
+                const SizedBox(height: 20),
               ],
             ),
           ),
