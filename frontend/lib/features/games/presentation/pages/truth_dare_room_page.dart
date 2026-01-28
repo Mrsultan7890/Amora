@@ -308,6 +308,21 @@ class _TruthDareRoomPageState extends State<TruthDareRoomPage> {
                 ),
                 child: const Icon(Icons.mic_off, color: Colors.white, size: 10),
               ),
+            )
+          else
+            // Voice activity indicator
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.mic, color: Colors.white, size: 10),
+              ),
             ),
         ],
       ),

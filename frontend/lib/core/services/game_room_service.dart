@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'api_service.dart';
+import 'websocket_service.dart';
 
 enum GameState {
   waiting,
@@ -69,6 +70,17 @@ class GameRoomService {
   
   Future<void> initialize() async {
     _roomController = StreamController<GameRoom>.broadcast();
+    
+    // Setup WebSocket for real-time game updates
+    final wsService = WebSocketService.instance;
+    wsService.onGameUpdate = (data) {
+      _handleGameUpdate(data);
+    };
+    
+    // Setup voice chat signaling
+    wsService.onVoiceChatSignal = (data) {
+      _handleVoiceChatSignal(data);
+    };
   }
   
   Future<GameRoom> createRoom() async {
@@ -119,12 +131,52 @@ class GameRoomService {
   
   Future<void> _initializeVoiceChat() async {
     try {
-      print('Initializing voice chat...');
-      // Voice chat initialization - simplified for demo
-      print('Voice chat initialized successfully');
+      print('🎤 Initializing group voice chat...');
+      
+      // Start local audio stream for voice chat
+      _localStream = await navigator.mediaDevices.getUserMedia({
+        'audio': {
+          'echoCancellation': true,
+          'noiseSuppression': true,
+          'autoGainControl': true,
+        },
+        'video': false, // Audio only for games
+      });
+      
+      // Create peer connection for group audio
+      _peerConnection = await createPeerConnection({
+        'iceServers': [
+          {'urls': 'stun:stun.l.google.com:19302'},
+          {'urls': 'stun:stun1.l.google.com:19302'},
+        ]
+      });
+      
+      // Add local stream to peer connection
+      await _peerConnection!.addStream(_localStream!);
+      
+      // Handle remote audio streams from other players
+      _peerConnection!.onAddStream = (MediaStream stream) {
+        print('🔊 Remote player audio stream added');
+        _remoteStreams[stream.id] = stream;
+        // Audio will play automatically
+      };
+      
+      _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
+        // Send ICE candidate via WebSocket to other players
+        _sendVoiceChatSignal({
+          'type': 'ice-candidate',
+          'candidate': {
+            'candidate': candidate.candidate,
+            'sdpMid': candidate.sdpMid,
+            'sdpMLineIndex': candidate.sdpMLineIndex,
+          }
+        });
+      };
+      
+      print('✅ Group voice chat initialized successfully');
     } catch (e) {
-      print('Voice chat initialization failed: $e');
-      // Don't throw error, continue without voice chat
+      print('❌ Voice chat initialization failed: $e');
+      // Continue without voice chat
     }
   }
   
@@ -202,8 +254,59 @@ class GameRoomService {
         if (playerIndex != -1) {
           _currentRoom!.players[playerIndex].isMuted = !audioTrack.enabled;
           _roomController?.add(_currentRoom!);
+          
+          // Notify other players about mute status
+          _sendVoiceChatSignal({
+            'type': 'mute-status',
+            'is_muted': !audioTrack.enabled,
+            'player_id': currentUser.id,
+          });
         }
       }
+      
+      print('🎤 Voice ${audioTrack.enabled ? "unmuted" : "muted"}');
+    }
+  }
+  
+  void _sendVoiceChatSignal(Map<String, dynamic> signal) {
+    if (_currentRoom == null) return;
+    
+    final wsService = WebSocketService.instance;
+    if (wsService.isConnected) {
+      wsService.sendMessage({
+        'type': 'voice_chat_signal',
+        'room_id': _currentRoom!.id,
+        'data': signal,
+      });
+    }
+  }
+  
+  void _handleVoiceChatSignal(Map<String, dynamic> data) {
+    final signalType = data['type'];
+    
+    switch (signalType) {
+      case 'ice-candidate':
+        final candidate = RTCIceCandidate(
+          data['candidate']['candidate'],
+          data['candidate']['sdpMid'],
+          data['candidate']['sdpMLineIndex'],
+        );
+        _peerConnection?.addCandidate(candidate);
+        break;
+        
+      case 'mute-status':
+        final playerId = data['player_id'];
+        final isMuted = data['is_muted'];
+        
+        // Update player mute status in UI
+        if (_currentRoom != null) {
+          final playerIndex = _currentRoom!.players.indexWhere((p) => p.id == playerId);
+          if (playerIndex != -1) {
+            _currentRoom!.players[playerIndex].isMuted = isMuted;
+            _roomController?.add(_currentRoom!);
+          }
+        }
+        break;
     }
   }
   
@@ -241,10 +344,49 @@ class GameRoomService {
     if (_currentRoom == null) return;
     
     try {
+      // Send via WebSocket for real-time updates
+      final wsService = WebSocketService.instance;
+      if (wsService.isConnected) {
+        wsService.sendMessage({
+          'type': 'game_update',
+          'room_id': _currentRoom!.id,
+          'data': stateData,
+        });
+      }
+      
+      // Also save to backend
       await _api.updateGameState(_currentRoom!.id, stateData);
     } catch (e) {
       onError?.call('Failed to update game state: $e');
     }
+  }
+  
+  void _handleGameUpdate(Map<String, dynamic> data) {
+    if (_currentRoom == null) return;
+    
+    // Update local room state
+    if (data['state'] != null) {
+      _currentRoom!.state = GameState.values.firstWhere(
+        (s) => s.name == data['state'],
+        orElse: () => _currentRoom!.state,
+      );
+    }
+    
+    if (data['selected_player'] != null) {
+      _currentRoom!.selectedPlayerId = data['selected_player'];
+    }
+    
+    if (data['question'] != null) {
+      _currentRoom!.currentQuestion = data['question'];
+    }
+    
+    if (data['round'] != null) {
+      _currentRoom!.round = data['round'];
+    }
+    
+    // Notify listeners
+    _roomController?.add(_currentRoom!);
+    onRoomUpdate?.call(_currentRoom!);
   }
   
   bool get isVoiceChatActive => _localStream != null;

@@ -19,7 +19,7 @@ class _GameLobbyPageState extends State<GameLobbyPage> {
       body: Container(
         decoration: const BoxDecoration(gradient: AmoraTheme.backgroundGradient),
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -44,10 +44,9 @@ class _GameLobbyPageState extends State<GameLobbyPage> {
                 const SizedBox(height: 40),
                 
                 // Game selection
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                       // Truth or Dare Game Card
                       Container(
                         width: double.infinity,
@@ -184,6 +183,8 @@ class _GameLobbyPageState extends State<GameLobbyPage> {
                           ],
                         ),
                       ).animate(delay: 600.ms).fadeIn(duration: 600.ms).slideY(begin: 0.3, end: 0),
+                      
+                      const SizedBox(height: 20), // Extra bottom padding
                     ],
                   ),
                 ),

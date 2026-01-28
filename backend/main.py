@@ -8,7 +8,7 @@ from typing import Dict, List
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.routes import auth, users, swipes, matches, messages, upload, notifications, emergency, support, features, verification, feed, games, calls
+from app.api.routes import auth, users, swipes, matches, messages, upload, notifications, emergency, support, features, verification, feed, games, calls, signaling
 from app.services.websocket_manager import ConnectionManager
 
 # Create tables
@@ -57,6 +57,7 @@ app.include_router(verification.router, prefix="/api/verification", tags=["Verif
 app.include_router(feed.router, prefix="/api/feed", tags=["Feed"])
 app.include_router(games.router, prefix="/api/games", tags=["Games"])
 app.include_router(calls.router, prefix="/api/calls", tags=["Calls"])
+app.include_router(signaling.router, prefix="/api/calls", tags=["Signaling"])
 
 @app.get("/")
 async def root():
@@ -77,10 +78,38 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
             data = await websocket.receive_text()
             message_data = json.loads(data)
             
-            # Broadcast message to match participants
-            match_id = message_data.get("match_id")
-            if match_id:
-                await manager.broadcast_to_match(message_data, match_id, user_id)
+            message_type = message_data.get("type")
+            
+            if message_type == "new_message":
+                # Chat message
+                match_id = message_data.get("match_id")
+                if match_id:
+                    await manager.broadcast_to_match(message_data, match_id, user_id)
+            
+            elif message_type == "signaling":
+                # WebRTC signaling
+                signaling_data = message_data.get("data", {})
+                target_user = signaling_data.get("to")
+                if target_user:
+                    signaling_data["from"] = user_id
+                    await manager.send_personal_message(
+                        json.dumps(signaling_data), 
+                        target_user
+                    )
+            
+            elif message_type == "game_update":
+                # Game state update
+                room_id = message_data.get("room_id")
+                game_data = message_data.get("data", {})
+                if room_id:
+                    await manager.send_game_update(room_id, game_data)
+            
+            elif message_type == "voice_chat_signal":
+                # Voice chat signaling for games
+                room_id = message_data.get("room_id")
+                signal_data = message_data.get("data", {})
+                if room_id:
+                    await manager.send_voice_chat_signal(room_id, signal_data, user_id)
                 
     except WebSocketDisconnect:
         manager.disconnect(user_id)

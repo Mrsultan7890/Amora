@@ -113,6 +113,18 @@ class BlockedUser(Base):
     blocked_id = Column(String, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class CallHistory(Base):
+    __tablename__ = "call_history"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    caller_id = Column(String, ForeignKey("users.id"), nullable=False)
+    callee_id = Column(String, ForeignKey("users.id"), nullable=False)
+    call_type = Column(String(20), nullable=False)  # video, audio
+    duration = Column(Integer, default=0)  # seconds
+    status = Column(String(20), nullable=False)  # completed, missed, declined
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 # Dependency to get DB session
 def get_db():
     db = SessionLocal()

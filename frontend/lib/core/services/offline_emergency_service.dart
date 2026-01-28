@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'location_service.dart';
 import 'sms_service.dart';
+import 'emergency_voice_service.dart';
 import '../../shared/models/emergency_contact_model.dart';
 
 class OfflineEmergencyService {
@@ -166,7 +167,15 @@ class OfflineEmergencyService {
       locationText = '\nLocation: https://maps.google.com/?q=$latitude,$longitude';
     }
     
-    final message = 'EMERGENCY ALERT\nI need immediate help!$locationText\nTime: ${DateTime.now().toString().substring(0, 19)}\n- Amora Emergency';
+    // Check if voice message exists
+    final voiceService = EmergencyVoiceService.instance;
+    String voiceInfo = '';
+    if (voiceService.hasRecording) {
+      final duration = await voiceService.getRecordingDuration();
+      voiceInfo = '\n🎤 Voice message recorded (${duration}s) - Check app for audio';
+    }
+    
+    final message = 'EMERGENCY ALERT\nI need immediate help!$locationText$voiceInfo\nTime: ${DateTime.now().toString().substring(0, 19)}\n- Amora Emergency';
     
     // Send automatic SMS to all contacts
     for (final contact in enabledContacts) {

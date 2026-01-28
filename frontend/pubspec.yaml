@@ -35,7 +35,10 @@ dependencies:
   
   # Location & Maps
   geolocator: ^10.1.0
+  # Audio recording
+  flutter_sound: ^9.2.13
   permission_handler: ^11.0.1
+  path_provider: ^2.1.1
   sensors_plus: ^4.0.2
   
   # Image & Media
@@ -53,7 +56,6 @@ dependencies:
   
   # QR Code for payments
   qr_flutter: ^4.1.0
-  path_provider: ^2.1.1
   
   # Video Calling
   flutter_webrtc: ^0.9.48

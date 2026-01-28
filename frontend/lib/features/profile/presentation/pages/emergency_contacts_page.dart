@@ -8,7 +8,9 @@ import '../../../../core/services/offline_emergency_service.dart';
 import '../../../../core/services/emergency_service.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/sms_service.dart';
+import '../../../../core/services/emergency_voice_service.dart';
 import '../../../../shared/models/emergency_contact_model.dart';
+import 'emergency_voice_setup_page.dart';
 
 class EmergencyContactsPage extends StatefulWidget {
   const EmergencyContactsPage({super.key});
@@ -65,116 +67,118 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
           gradient: AmoraTheme.backgroundGradient,
         ),
         child: SafeArea(
-          child: Column(
-            children: [
+          child: CustomScrollView(
+            slivers: [
               // Header
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.arrow_back_ios,
-                        color: AmoraTheme.deepMidnight,
-                      ),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Emergency Contacts',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
                           color: AmoraTheme.deepMidnight,
                         ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: _addContact,
-                      icon: const Icon(
-                        Icons.add,
-                        color: AmoraTheme.sunsetRose,
+                      const Expanded(
+                        child: Text(
+                          'Emergency Contacts',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AmoraTheme.deepMidnight,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      IconButton(
+                        onPressed: _addContact,
+                        icon: const Icon(
+                          Icons.add,
+                          color: AmoraTheme.sunsetRose,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
               // Emergency toggle
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: AmoraTheme.glassmorphism(
-                  color: _emergencyService.isEnabled ? Colors.green.shade50 : Colors.grey.shade50,
-                  borderRadius: 12,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _emergencyService.isEnabled ? Icons.security : Icons.security_outlined,
-                      color: _emergencyService.isEnabled ? Colors.green : Colors.grey,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Emergency System',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: _emergencyService.isEnabled ? Colors.green : Colors.grey,
-                            ),
-                          ),
-                          Text(
-                            _emergencyService.isEnabled 
-                              ? 'Shake detection active (30s cooldown)'
-                              : 'Shake detection disabled',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: _emergencyService.isEnabled ? Colors.green.shade700 : Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: AmoraTheme.glassmorphism(
+                    color: _emergencyService.isEnabled ? Colors.green.shade50 : Colors.grey.shade50,
+                    borderRadius: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _emergencyService.isEnabled ? Icons.security : Icons.security_outlined,
+                        color: _emergencyService.isEnabled ? Colors.green : Colors.grey,
+                        size: 24,
                       ),
-                    ),
-                    Switch(
-                      value: _emergencyService.isEnabled,
-                      onChanged: (value) async {
-                        await _emergencyService.setEnabled(value);
-                        // Also update main emergency service
-                        final EmergencyService emergencyService = EmergencyService.instance;
-                        await emergencyService.setEmergencyEnabled(value);
-                        // Also update settings service
-                        final SettingsService settingsService = SettingsService.instance;
-                        await settingsService.setEmergencyShakeEnabled(value);
-                        
-                        setState(() {});
-                        
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                value 
-                                  ? '🚨 Emergency system ENABLED' 
-                                  : '❌ Emergency system DISABLED'
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Emergency System',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: _emergencyService.isEnabled ? Colors.green : Colors.grey,
                               ),
-                              backgroundColor: value ? Colors.green : Colors.red,
-                              duration: const Duration(seconds: 2),
                             ),
-                          );
-                        }
-                      },
-                      activeColor: Colors.green,
-                    ),
-                  ],
-                ),
-              ).animate()
-                .fadeIn(duration: 600.ms)
-                .slideY(begin: 0.3, end: 0),
+                            Text(
+                              _emergencyService.isEnabled 
+                                ? 'Shake detection active (30s cooldown)'
+                                : 'Shake detection disabled',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: _emergencyService.isEnabled ? Colors.green.shade700 : Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _emergencyService.isEnabled,
+                        onChanged: (value) async {
+                          await _emergencyService.setEnabled(value);
+                          final EmergencyService emergencyService = EmergencyService.instance;
+                          await emergencyService.setEmergencyEnabled(value);
+                          final SettingsService settingsService = SettingsService.instance;
+                          await settingsService.setEmergencyShakeEnabled(value);
+                          
+                          setState(() {});
+                          
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  value 
+                                    ? '🚨 Emergency system ENABLED' 
+                                    : '❌ Emergency system DISABLED'
+                                ),
+                                backgroundColor: value ? Colors.green : Colors.red,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        activeColor: Colors.green,
+                      ),
+                    ],
+                  ),
+                ).animate()
+                  .fadeIn(duration: 600.ms)
+                  .slideY(begin: 0.3, end: 0),
+              ),
 
               // Info card
               Container(
@@ -320,17 +324,19 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                 .slideY(begin: 0.3, end: 0),
 
               // Contacts list
-              Expanded(
-                child: _isLoading
-                    ? const Center(
+              _isLoading
+                  ? const SliverFillRemaining(
+                      child: Center(
                         child: CircularProgressIndicator(
                           valueColor: AlwaysStoppedAnimation<Color>(
                             AmoraTheme.sunsetRose,
                           ),
                         ),
-                      )
-                    : _contacts.isEmpty
-                        ? Center(
+                      ),
+                    )
+                  : _contacts.isEmpty
+                      ? SliverFillRemaining(
+                          child: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -370,70 +376,97 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                                   ),
                                   child: const Text('Add First Contact'),
                                 ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const EmergencyVoiceSetupPage(),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orange,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: const Text('🎤 Setup Voice Message'),
+                                ),
                               ],
                             ),
-                          )
-                        : SingleChildScrollView(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: _contacts.asMap().entries.map((entry) {
-                                final index = entry.key;
-                                final contact = entry.value;
-                                return _buildContactCard(contact, index);
-                              }).toList(),
+                          ),
+                        )
+                      : SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              if (index < _contacts.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                  child: _buildContactCard(_contacts[index], index),
+                                );
+                              }
+                              return null;
+                            },
+                            childCount: _contacts.length,
+                          ),
+                        ),
+              
+              // Test buttons
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _testEmergencySystem,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-              ),
-
-              // Test buttons
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _testEmergencySystem,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Test Emergency System',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          child: const Text(
+                            'Test Emergency System',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _testOfflineEmergency,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _testOfflineEmergency,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          '🚨 TEST OFFLINE EMERGENCY 🚨',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          child: const Text(
+                            '🚨 TEST OFFLINE EMERGENCY 🚨',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 20), // Extra bottom padding
+                    ],
+                  ),
                 ),
               ),
             ],

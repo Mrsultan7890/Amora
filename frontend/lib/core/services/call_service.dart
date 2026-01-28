@@ -1,6 +1,7 @@
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'webrtc_service.dart';
 import 'api_service.dart';
+import 'websocket_service.dart';
 
 enum CallState {
   idle,
@@ -69,6 +70,12 @@ class CallService {
       } else if (state.contains('failed') || state.contains('disconnected')) {
         _setState(CallState.failed);
       }
+    };
+    
+    // Setup WebSocket signaling
+    final wsService = WebSocketService.instance;
+    wsService.onSignalingMessage = (message) {
+      handleSignalingMessage(message);
     };
   }
   
@@ -256,7 +263,18 @@ class CallService {
   Future<void> _sendSignalingMessage(Map<String, dynamic> message) async {
     try {
       message['to'] = _otherUserId;
-      await _api.sendSignalingMessage(message);
+      
+      // Try WebSocket first (real-time)
+      final wsService = WebSocketService.instance;
+      if (wsService.isConnected) {
+        wsService.sendMessage({
+          'type': 'signaling',
+          'data': message,
+        });
+      } else {
+        // Fallback to HTTP API
+        await _api.sendSignalingMessage(message);
+      }
     } catch (e) {
       print('❌ Error sending signaling message: $e');
     }

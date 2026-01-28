@@ -5,6 +5,9 @@ flutter_launcher_icons:
   adaptive_icon_background: "#E91E63"
   adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
   
+  # Remove old icons first
+  remove_alpha_ios: true
+  
   # Different sizes for Android
   android_12:
     image_path: "assets/icons/app_icon.png"

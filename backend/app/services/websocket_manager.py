@@ -68,3 +68,48 @@ class ConnectionManager:
                     await self.send_personal_message(typing_message, recipient_id)
         finally:
             db.close()
+    
+    async def send_game_update(self, room_id: str, game_data: dict):
+        """Send game update to all players in room"""
+        from app.api.routes.games import game_rooms
+        
+        if room_id in game_rooms:
+            room = game_rooms[room_id]
+            players = room.get('players', [])
+            
+            message = {
+                "type": "game_update",
+                "room_id": room_id,
+                "data": game_data
+            }
+            
+            for player in players:
+                player_id = player.get('id')
+                if player_id and player_id in self.active_connections:
+                    await self.send_personal_message(
+                        json.dumps(message), 
+                        player_id
+                    )
+    
+    async def send_voice_chat_signal(self, room_id: str, signal_data: dict, sender_id: str):
+        """Send voice chat signal to all players in room except sender"""
+        from app.api.routes.games import game_rooms
+        
+        if room_id in game_rooms:
+            room = game_rooms[room_id]
+            players = room.get('players', [])
+            
+            message = {
+                "type": "voice_chat_signal",
+                "room_id": room_id,
+                "data": signal_data
+            }
+            
+            # Send to all players except sender
+            for player in players:
+                player_id = player.get('id')
+                if player_id and player_id != sender_id and player_id in self.active_connections:
+                    await self.send_personal_message(
+                        json.dumps(message), 
+                        player_id
+                    )

@@ -14,7 +14,7 @@ class AppConstants {
   
   // Feature Flags
   static const bool enablePushNotifications = false;
-  static const bool enableVideoCalls = false;
+  static const bool enableVideoCalls = true;
   static const bool enablePremiumFeatures = false;
   
   // Pagination
