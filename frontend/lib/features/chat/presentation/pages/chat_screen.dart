@@ -188,25 +188,31 @@ class _ChatScreenState extends State<ChatScreen> {
   
   Future<void> _initiateCall(CallType callType) async {
     try {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => VideoCallPage(
-            otherUserId: widget.match.otherUser!.id,
-            otherUserName: widget.match.otherUser!.name,
-          ),
-        ),
-      );
-      
+      // Start the call service first
       await _callService.startCall(widget.match.otherUser!.id, callType);
       
+      // Then navigate to video call screen
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VideoCallPage(
+              otherUserId: widget.match.otherUser!.id,
+              otherUserName: widget.match.otherUser!.name,
+            ),
+          ),
+        );
+      }
+      
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to start call: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start call: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

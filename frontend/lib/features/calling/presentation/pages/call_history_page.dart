@@ -29,31 +29,15 @@ class _CallHistoryPageState extends State<CallHistoryPage> {
         _isLoading = false;
       });
     } catch (e) {
-      _generateSampleHistory();
+      print('Error loading call history: $e');
+      setState(() {
+        _callHistory = [];
+        _isLoading = false;
+      });
     }
   }
 
-  void _generateSampleHistory() {
-    _callHistory = [
-      {
-        'id': '1',
-        'other_user_name': 'Sarah',
-        'call_type': 'video',
-        'status': 'completed',
-        'duration': 180,
-        'timestamp': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-      },
-      {
-        'id': '2',
-        'other_user_name': 'Alex',
-        'call_type': 'audio',
-        'status': 'missed',
-        'duration': 0,
-        'timestamp': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
-      },
-    ];
-    setState(() => _isLoading = false);
-  }
+
 
   @override
   Widget build(BuildContext context) {

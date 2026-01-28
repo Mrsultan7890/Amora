@@ -109,17 +109,21 @@ class _TruthDareRoomPageState extends State<TruthDareRoomPage> {
               
               // Game Area
               Expanded(
-                child: Column(
-                  children: [
-                    // Players Circle
-                    Expanded(flex: 2, child: _buildPlayersCircle()),
-                    
-                    // Game Status
-                    _buildGameStatus(),
-                    
-                    // Controls
-                    _buildControls(),
-                  ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // Players Circle
+                      SizedBox(height: 300, child: _buildPlayersCircle()),
+                      
+                      // Game Status
+                      _buildGameStatus(),
+                      
+                      // Controls
+                      _buildControls(),
+                      
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             ],

@@ -32,33 +32,15 @@ class _FeedPageState extends State<FeedPage> {
         _isLoading = false;
       });
     } catch (e) {
-      _generateSampleFeed();
+      print('Error loading feed: $e');
+      setState(() {
+        _feedItems = [];
+        _isLoading = false;
+      });
     }
   }
 
-  void _generateSampleFeed() {
-    _feedItems = [
-      {
-        'id': '1',
-        'user_name': 'Sarah',
-        'user_age': 24,
-        'photo_url': 'https://picsum.photos/400/600?random=1',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-        'likes_count': 12,
-        'is_liked': false,
-      },
-      {
-        'id': '2', 
-        'user_name': 'Alex',
-        'user_age': 26,
-        'photo_url': 'https://picsum.photos/400/600?random=2',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 5)).toIso8601String(),
-        'likes_count': 8,
-        'is_liked': true,
-      },
-    ];
-    setState(() => _isLoading = false);
-  }
+
 
   Future<void> _toggleLike(String itemId) async {
     final index = _feedItems.indexWhere((item) => item['id'] == itemId);
@@ -70,6 +52,16 @@ class _FeedPageState extends State<FeedPage> {
       _feedItems[index]['is_liked'] = !isLiked;
       _feedItems[index]['likes_count'] += isLiked ? -1 : 1;
     });
+
+    try {
+      await _apiService.likeFeedPhoto(itemId, !isLiked);
+    } catch (e) {
+      // Revert on error
+      setState(() {
+        _feedItems[index]['is_liked'] = isLiked;
+        _feedItems[index]['likes_count'] += isLiked ? 1 : -1;
+      });
+    }
   }
 
   @override

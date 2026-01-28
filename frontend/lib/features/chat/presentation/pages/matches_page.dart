@@ -377,27 +377,31 @@ class _MatchesPageState extends State<MatchesPage> {
   
   Future<void> _initiateCall(MatchModel match) async {
     try {
-      // Navigate to video call screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => VideoCallPage(
-            otherUserId: match.otherUser!.id,
-            otherUserName: match.otherUser!.name,
-          ),
-        ),
-      );
-      
-      // Start the call
+      // Start the call service first
       await _callService.startCall(match.otherUser!.id, CallType.video);
       
+      // Then navigate to video call screen
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VideoCallPage(
+              otherUserId: match.otherUser!.id,
+              otherUserName: match.otherUser!.name,
+            ),
+          ),
+        );
+      }
+      
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to start call: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start call: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
