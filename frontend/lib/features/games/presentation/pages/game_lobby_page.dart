@@ -184,7 +184,7 @@ class _GameLobbyPageState extends State<GameLobbyPage> {
                         ),
                       ).animate(delay: 600.ms).fadeIn(duration: 600.ms).slideY(begin: 0.3, end: 0),
                       
-                      const SizedBox(height: 20), // Extra bottom padding
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),

@@ -8,7 +8,6 @@ import '../../../../core/services/offline_emergency_service.dart';
 import '../../../../core/services/emergency_service.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/sms_service.dart';
-import '../../../../core/services/emergency_voice_service.dart';
 import '../../../../shared/models/emergency_contact_model.dart';
 import 'emergency_voice_setup_page.dart';
 
