@@ -60,14 +60,42 @@ class _TruthDareRoomPageState extends State<TruthDareRoomPage> {
   }
   
   Future<void> _spinBottle() async {
-    if (_room == null || _isSpinning) return;
+    if (_room == null || _isSpinning || _room!.players.length < 2) return;
     
     setState(() => _isSpinning = true);
     
-    final random = Random();
-    _selectedPlayerIndex = random.nextInt(_room!.players.length);
-    
-    await _gameService.spinBottle();
+    try {
+      // Update room state to spinning
+      _room!.state = GameState.spinning;
+      setState(() {});
+      
+      // Select random player
+      final random = Random();
+      _selectedPlayerIndex = random.nextInt(_room!.players.length);
+      final selectedPlayer = _room!.players[_selectedPlayerIndex];
+      
+      // Wait for animation to complete (3 seconds)
+      await Future.delayed(const Duration(seconds: 3));
+      
+      // Update room state
+      _room!.selectedPlayerId = selectedPlayer.id;
+      _room!.state = GameState.questioning;
+      
+      setState(() => _isSpinning = false);
+      
+      // Send to backend
+      await _gameService.updateGameState({
+        'state': 'questioning',
+        'selected_player': selectedPlayer.id,
+        'round': _room!.round,
+      });
+      
+    } catch (e) {
+      setState(() => _isSpinning = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to spin bottle: $e')),
+      );
+    }
   }
   
   void _onSpinComplete() {

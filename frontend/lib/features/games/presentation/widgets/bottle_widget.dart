@@ -155,7 +155,8 @@ class _SpinBottleWidgetState extends State<SpinBottleWidget>
   void _startSpin() {
     final random = Random();
     final baseRotations = 3 + random.nextDouble() * 2; // 3-5 full rotations
-    final targetAngle = (widget.selectedPlayerIndex * (2 * pi / 4)) + (baseRotations * 2 * pi);
+    final playerCount = 4; // Assume max 4 players
+    final targetAngle = (widget.selectedPlayerIndex * (2 * pi / playerCount)) + (baseRotations * 2 * pi);
     
     _animation = Tween<double>(
       begin: 0,

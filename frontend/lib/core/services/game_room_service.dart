@@ -237,6 +237,16 @@ class GameRoomService {
     leaveRoom();
   }
   
+  Future<void> updateGameState(Map<String, dynamic> stateData) async {
+    if (_currentRoom == null) return;
+    
+    try {
+      await _api.updateGameState(_currentRoom!.id, stateData);
+    } catch (e) {
+      onError?.call('Failed to update game state: $e');
+    }
+  }
+  
   bool get isVoiceChatActive => _localStream != null;
   bool get isMuted => _localStream?.getAudioTracks().first.enabled == false;
 }

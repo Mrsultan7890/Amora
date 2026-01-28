@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../profile/presentation/pages/profile_view_screen.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -64,6 +65,82 @@ class _NotificationsPageState extends State<NotificationsPage> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _handleNotificationTap(Map<String, dynamic> notification) async {
+    final isUnread = !(notification['read'] ?? false);
+    
+    // Mark as read if unread
+    if (isUnread) {
+      await _markAsRead(notification['id']);
+    }
+    
+    // Handle navigation based on notification type
+    final type = notification['type'] ?? 'general';
+    
+    if (type == 'feed_like') {
+      // Extract user_id from notification id
+      final notificationId = notification['id'] ?? '';
+      if (notificationId.contains('feed_like_')) {
+        final parts = notificationId.split('_');
+        if (parts.length >= 3) {
+          final userId = parts[2]; // feed_like_{sender_id}_{photo_id}_{timestamp}
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProfileViewScreen(
+                userId: userId,
+                userName: null,
+              ),
+            ),
+          );
+        }
+      }
+    }
+    // All other notifications are just clickable to mark as read
+  }
+  
+  void _navigateToProfile(Map<String, dynamic> notification) {
+    // Extract user_id from notification for feed_like type
+    String? userId;
+    
+    if (notification['type'] == 'feed_like') {
+      // For feed likes, extract user_id from notification id or message
+      final notificationId = notification['id'] ?? '';
+      if (notificationId.contains('feed_like_')) {
+        final parts = notificationId.split('_');
+        if (parts.length >= 3) {
+          userId = parts[2]; // feed_like_{sender_id}_{photo_id}_{timestamp}
+        }
+      }
+    }
+    
+    if (userId != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfileViewScreen(
+            userId: userId,
+            userName: null, // Will be loaded by ProfileViewScreen
+          ),
+        ),
+      );
+    } else {
+      // Fallback dialog for other notification types
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(notification['title'] ?? 'Notification'),
+          content: Text(notification['message'] ?? ''),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -186,6 +263,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
     Color iconColor;
     
     switch (type) {
+      case 'feed_like':
+        icon = Icons.favorite;
+        iconColor = AmoraTheme.sunsetRose;
+        break;
       case 'match':
         icon = Icons.favorite;
         iconColor = AmoraTheme.sunsetRose;
@@ -204,11 +285,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
 
     return GestureDetector(
-      onTap: () {
-        if (isUnread) {
-          _markAsRead(notification['id']);
-        }
-      },
+      onTap: () => _handleNotificationTap(notification),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),

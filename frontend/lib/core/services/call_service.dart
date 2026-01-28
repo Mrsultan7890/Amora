@@ -78,6 +78,13 @@ class CallService {
   
   Future<void> startCall(String userId, CallType callType) async {
     try {
+      // Check if calling self
+      final currentUser = await _api.getCurrentUser();
+      if (currentUser.id == userId) {
+        onError?.call('Cannot call yourself! Need 2 different devices for video calls.');
+        return;
+      }
+      
       print('📞 Starting call to $userId');
       
       _otherUserId = userId;
@@ -117,7 +124,7 @@ class CallService {
     } catch (e) {
       print('❌ Error starting call: $e');
       _setState(CallState.failed);
-      onError?.call(e.toString());
+      onError?.call('Call failed: $e');
     }
   }
   
