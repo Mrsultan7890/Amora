@@ -17,17 +17,38 @@ async def get_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get user notifications based on matches and messages"""
+    """Get user notifications based on matches, messages, and feed likes"""
     
     try:
+        notifications = []
+        unread_count = 0
+        
+        # Get feed like notifications
+        try:
+            feed_notifications = db.execute(
+                text("SELECT * FROM notifications WHERE user_id = :user_id AND type = 'feed_like' ORDER BY timestamp DESC LIMIT 10"),
+                {"user_id": current_user.id}
+            ).fetchall()
+            
+            for notif in feed_notifications:
+                notifications.append({
+                    "id": notif[0],
+                    "type": notif[2],
+                    "title": notif[3],
+                    "message": notif[4],
+                    "timestamp": notif[5],
+                    "read": bool(notif[6])
+                })
+                if not notif[6]:  # if not read
+                    unread_count += 1
+        except Exception as e:
+            print(f"Error getting feed notifications: {e}")
+        
         # Get user's matches for match notifications
         matches_query = db.execute(
             text("SELECT * FROM matches WHERE user1_id = :user_id OR user2_id = :user_id ORDER BY created_at DESC LIMIT 5"),
             {"user_id": current_user.id}
         ).fetchall()
-        
-        notifications = []
-        unread_count = 0
         
         # Add match notifications
         for match in matches_query:
@@ -45,7 +66,7 @@ async def get_notifications(
                 })
                 unread_count += 1
         
-        # Add sample notifications if no matches
+        # Add sample notifications if no notifications
         if not notifications:
             notifications.extend([
                 {
@@ -66,6 +87,9 @@ async def get_notifications(
                 }
             ])
             unread_count += 2
+        
+        # Sort all notifications by timestamp
+        notifications.sort(key=lambda x: x['timestamp'], reverse=True)
         
         return {"notifications": notifications, "unread_count": unread_count}
         

@@ -32,5 +32,6 @@ class User(Base):
     verification_badge_color = Column(String(10), default="blue")  # blue, pink, purple, gold
     verification_type = Column(String(20), default="basic")  # basic, donor
     profile_completion = Column(Integer, default=0)  # percentage
+    show_in_feed = Column(Boolean, default=True)  # Show photos in feed
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
