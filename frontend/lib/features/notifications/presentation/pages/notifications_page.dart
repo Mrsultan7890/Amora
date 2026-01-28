@@ -76,29 +76,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
       await _markAsRead(notification['id']);
     }
     
-    // Handle navigation based on notification type
-    final type = notification['type'] ?? 'general';
-    
-    if (type == 'feed_like') {
-      // Extract user_id from notification id
-      final notificationId = notification['id'] ?? '';
-      if (notificationId.contains('feed_like_')) {
-        final parts = notificationId.split('_');
-        if (parts.length >= 3) {
-          final userId = parts[2]; // feed_like_{sender_id}_{photo_id}_{timestamp}
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProfileViewScreen(
-                userId: userId,
-                userName: null,
-              ),
-            ),
-          );
-        }
-      }
-    }
-    // All other notifications are just clickable to mark as read
+    // Navigate to profile for all notification types
+    _navigateToProfile(notification);
   }
   
   void _navigateToProfile(Map<String, dynamic> notification) {
@@ -121,7 +100,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         context,
         MaterialPageRoute(
           builder: (context) => ProfileViewScreen(
-            userId: userId,
+            userId: userId!,
             userName: null, // Will be loaded by ProfileViewScreen
           ),
         ),
