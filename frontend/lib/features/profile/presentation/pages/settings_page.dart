@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/emergency_service.dart';
 import '../../../../core/services/offline_emergency_service.dart';
+import '../../../calling/presentation/pages/call_history_page.dart';
 import 'emergency_contacts_page.dart';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
@@ -32,6 +33,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String _interestedIn = 'Everyone';
   bool _showMeOnAmora = true;
   bool _incognitoMode = false;
+  bool _showInFeed = true;
   bool _isLoading = false;
 
   @override
@@ -59,6 +61,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _emergencyShakeEnabled = settings['emergency_shake_enabled'] ?? true;
           _showMeOnAmora = settings['show_me_on_amora'];
           _incognitoMode = settings['incognito_mode'];
+          _showInFeed = settings['show_in_feed'] ?? true;
         });
       }
     } catch (e) {
@@ -288,6 +291,18 @@ class _SettingsPageState extends State<SettingsPage> {
                             await _settingsService.setIncognitoMode(value);
                           },
                         ),
+                        
+                        const Divider(height: 1),
+                        
+                        _buildSwitchSetting(
+                          'Show in Feed',
+                          'Display your photos in the community feed',
+                          _showInFeed,
+                          (value) async {
+                            setState(() => _showInFeed = value);
+                            await _settingsService.setShowInFeed(value);
+                          },
+                        ),
                       ]).animate()
                         .fadeIn(delay: 600.ms, duration: 600.ms)
                         .slideY(begin: 0.3, end: 0),
@@ -317,6 +332,15 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Manage offline emergency contacts',
                           Icons.contact_emergency,
                           () => _showEmergencyContactsPage(),
+                        ),
+                        
+                        const Divider(height: 1),
+                        
+                        _buildActionSetting(
+                          'Call History',
+                          'View your video call history',
+                          Icons.call,
+                          () => _showCallHistoryPage(),
                         ),
                         
                         const Divider(height: 1),
@@ -867,6 +891,15 @@ class _SettingsPageState extends State<SettingsPage> {
       context,
       MaterialPageRoute(
         builder: (context) => const EmergencyContactsPage(),
+      ),
+    );
+  }
+  
+  void _showCallHistoryPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CallHistoryPage(),
       ),
     );
   }

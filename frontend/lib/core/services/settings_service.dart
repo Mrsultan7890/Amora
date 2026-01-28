@@ -20,6 +20,7 @@ class SettingsService {
   static const String _showDistanceKey = 'show_distance';
   static const String _showMeOnAmoraKey = 'show_me_on_amora';
   static const String _incognitoModeKey = 'incognito_mode';
+  static const String _showInFeedKey = 'show_in_feed';
   static const String _emergencyShakeEnabledKey = 'emergency_shake_enabled';
   
   // Discovery Settings
@@ -142,6 +143,18 @@ class SettingsService {
     await _updateUserSettings({'emergency_shake_enabled': enabled});
   }
   
+  // Feed Settings
+  Future<bool> getShowInFeed() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_showInFeedKey) ?? true;
+  }
+  
+  Future<void> setShowInFeed(bool show) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showInFeedKey, show);
+    await _updateUserSettings({'show_in_feed': show});
+  }
+  
   // Load all settings
   Future<Map<String, dynamic>> loadAllSettings() async {
     return {
@@ -155,6 +168,7 @@ class SettingsService {
       'show_me_on_amora': await getShowMeOnAmora(),
       'incognito_mode': await getIncognitoMode(),
       'emergency_shake_enabled': await getEmergencyShakeEnabled(),
+      'show_in_feed': await getShowInFeed(),
     };
   }
   

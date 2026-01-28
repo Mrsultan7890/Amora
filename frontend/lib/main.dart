@@ -17,6 +17,7 @@ import 'features/chat/presentation/pages/matches_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/profile/presentation/pages/edit_profile_page.dart';
 import 'features/profile/presentation/pages/settings_page.dart';
+import 'features/feed/presentation/pages/feed_page.dart';
 import 'shared/widgets/main_navigation.dart';
 
 void main() async {
@@ -129,6 +130,10 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/matches',
           builder: (context, state) => const MatchesPage(),
+        ),
+        GoRoute(
+          path: '/feed',
+          builder: (context, state) => const FeedPage(),
         ),
         GoRoute(
           path: '/profile',

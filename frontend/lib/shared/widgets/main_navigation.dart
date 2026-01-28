@@ -31,6 +31,12 @@ class _MainNavigationState extends State<MainNavigation> {
       route: '/matches',
     ),
     NavigationItem(
+      icon: Icons.photo_library_outlined,
+      activeIcon: Icons.photo_library,
+      label: 'Feed',
+      route: '/feed',
+    ),
+    NavigationItem(
       icon: Icons.person_outline,
       activeIcon: Icons.person,
       label: 'Profile',

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/call_service.dart';
 import '../../../../shared/models/match_model.dart';
+import '../../../calling/presentation/pages/video_call_page.dart';
+import '../../../calling/presentation/widgets/wifi_warning_dialog.dart';
 import 'chat_screen.dart';
 
 class MatchesPage extends StatefulWidget {
@@ -14,6 +17,7 @@ class MatchesPage extends StatefulWidget {
 
 class _MatchesPageState extends State<MatchesPage> {
   final ApiService _apiService = ApiService.instance;
+  final CallService _callService = CallService.instance;
   final TextEditingController _searchController = TextEditingController();
   List<MatchModel> _matches = [];
   List<MatchModel> _filteredMatches = [];
@@ -24,6 +28,7 @@ class _MatchesPageState extends State<MatchesPage> {
     super.initState();
     _loadMatches();
     _searchController.addListener(_filterMatches);
+    _callService.initialize();
   }
 
   Future<void> _loadMatches() async {
@@ -292,17 +297,40 @@ class _MatchesPageState extends State<MatchesPage> {
             ),
           ],
         ),
-        trailing: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            gradient: AmoraTheme.primaryGradient,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.chat_bubble,
-            color: Colors.white,
-            size: 20,
-          ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Video call button
+            GestureDetector(
+              onTap: () => _startVideoCall(match),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AmoraTheme.sunsetRose.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.videocam,
+                  color: AmoraTheme.sunsetRose,
+                  size: 20,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Chat button
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                gradient: AmoraTheme.primaryGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.chat_bubble,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ],
         ),
         onTap: () {
           _openChat(match);
@@ -320,6 +348,57 @@ class _MatchesPageState extends State<MatchesPage> {
         builder: (context) => ChatScreen(match: match),
       ),
     );
+  }
+  
+  Future<void> _startVideoCall(MatchModel match) async {
+    if (match.otherUser == null) return;
+    
+    // Check network connection
+    final isWiFi = await _callService.checkNetworkAndShowWarning();
+    
+    if (isWiFi) {
+      // Show WiFi warning
+      WiFiWarningDialog.show(
+        context,
+        onContinueAnyway: () => _initiateCall(match),
+        onSwitchToMobile: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please switch to mobile data and try again'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        },
+      );
+    } else {
+      _initiateCall(match);
+    }
+  }
+  
+  Future<void> _initiateCall(MatchModel match) async {
+    try {
+      // Navigate to video call screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VideoCallPage(
+            otherUserId: match.otherUser!.id,
+            otherUserName: match.otherUser!.name,
+          ),
+        ),
+      );
+      
+      // Start the call
+      await _callService.startCall(match.otherUser!.id, CallType.video);
+      
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to start call: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   String _getTimeText(DateTime dateTime) {

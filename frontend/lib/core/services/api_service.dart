@@ -440,6 +440,50 @@ class ApiService {
       throw _handleError(e);
     }
   }
+  // Feed Methods
+  Future<Map<String, dynamic>> getFeedPhotos() async {
+    try {
+      final response = await _dio.get('/feed/photos');
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<void> likeFeedPhoto(String photoId, bool isLike) async {
+    try {
+      await _dio.post('/feed/photos/$photoId/like', data: {'is_like': isLike});
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  // Signaling Methods
+  Future<void> sendSignalingMessage(Map<String, dynamic> message) async {
+    try {
+      await _dio.post('/calls/signaling', data: message);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<void> saveCallHistory(Map<String, dynamic> callData) async {
+    try {
+      await _dio.post('/calls/history', data: callData);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<List<Map<String, dynamic>>> getCallHistory() async {
+    try {
+      final response = await _dio.get('/calls/history');
+      return List<Map<String, dynamic>>.from(response.data['calls'] ?? []);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
   // Features Methods
   Future<Map<String, dynamic>> activateBoost({
     int durationMinutes = 30,

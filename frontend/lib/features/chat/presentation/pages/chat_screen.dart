@@ -4,9 +4,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/call_service.dart';
 import '../../../../shared/models/match_model.dart';
 import '../../../../shared/models/message_model.dart';
 import '../../../profile/presentation/pages/profile_view_screen.dart';
+import '../../../calling/presentation/pages/video_call_page.dart';
+import '../../../calling/presentation/widgets/wifi_warning_dialog.dart';
 
 class ChatScreen extends StatefulWidget {
   final MatchModel match;
@@ -25,6 +28,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<MessageModel> _messages = [];
   final ApiService _apiService = ApiService.instance;
+  final CallService _callService = CallService.instance;
   String? _currentUserId;
 
   @override
@@ -32,6 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadCurrentUser();
     _loadMessages();
+    _callService.initialize();
     
     // Refresh messages every 5 seconds to catch emergency alerts
     Timer.periodic(const Duration(seconds: 5), (timer) {
@@ -134,6 +139,76 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     });
   }
+  
+  Future<void> _startVideoCall() async {
+    if (widget.match.otherUser == null) return;
+    
+    final isWiFi = await _callService.checkNetworkAndShowWarning();
+    
+    if (isWiFi) {
+      WiFiWarningDialog.show(
+        context,
+        onContinueAnyway: () => _initiateCall(CallType.video),
+        onSwitchToMobile: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please switch to mobile data and try again'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        },
+      );
+    } else {
+      _initiateCall(CallType.video);
+    }
+  }
+  
+  Future<void> _startVoiceCall() async {
+    if (widget.match.otherUser == null) return;
+    
+    final isWiFi = await _callService.checkNetworkAndShowWarning();
+    
+    if (isWiFi) {
+      WiFiWarningDialog.show(
+        context,
+        onContinueAnyway: () => _initiateCall(CallType.audio),
+        onSwitchToMobile: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please switch to mobile data and try again'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        },
+      );
+    } else {
+      _initiateCall(CallType.audio);
+    }
+  }
+  
+  Future<void> _initiateCall(CallType callType) async {
+    try {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VideoCallPage(
+            otherUserId: widget.match.otherUser!.id,
+            otherUserName: widget.match.otherUser!.name,
+          ),
+        ),
+      );
+      
+      await _callService.startCall(widget.match.otherUser!.id, callType);
+      
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to start call: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -220,18 +295,14 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              // Video call functionality
-            },
+            onPressed: () => _startVideoCall(),
             icon: const Icon(
               Icons.videocam,
               color: AmoraTheme.sunsetRose,
             ),
           ),
           IconButton(
-            onPressed: () {
-              // Voice call functionality
-            },
+            onPressed: () => _startVoiceCall(),
             icon: const Icon(
               Icons.call,
               color: AmoraTheme.sunsetRose,
