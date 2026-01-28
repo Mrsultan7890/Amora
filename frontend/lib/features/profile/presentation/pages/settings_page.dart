@@ -6,6 +6,7 @@ import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/emergency_service.dart';
 import '../../../../core/services/offline_emergency_service.dart';
 import '../../../calling/presentation/pages/call_history_page.dart';
+import '../../../games/presentation/pages/game_lobby_page.dart';
 import 'emergency_contacts_page.dart';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
@@ -341,6 +342,15 @@ class _SettingsPageState extends State<SettingsPage> {
                           'View your video call history',
                           Icons.call,
                           () => _showCallHistoryPage(),
+                        ),
+                        
+                        const Divider(height: 1),
+                        
+                        _buildActionSetting(
+                          'Truth or Dare Game',
+                          'Play games with couples and friends',
+                          Icons.psychology,
+                          () => _showGameLobby(),
                         ),
                         
                         const Divider(height: 1),
@@ -900,6 +910,15 @@ class _SettingsPageState extends State<SettingsPage> {
       context,
       MaterialPageRoute(
         builder: (context) => const CallHistoryPage(),
+      ),
+    );
+  }
+  
+  void _showGameLobby() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const GameLobbyPage(),
       ),
     );
   }

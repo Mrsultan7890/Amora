@@ -458,6 +458,41 @@ class ApiService {
     }
   }
   
+  // Game Room Methods
+  Future<Map<String, dynamic>> createGameRoom() async {
+    try {
+      final response = await _dio.post('/games/rooms/create');
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<Map<String, dynamic>> joinGameRoom(String roomId) async {
+    try {
+      final response = await _dio.post('/games/rooms/$roomId/join');
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<void> leaveGameRoom(String roomId) async {
+    try {
+      await _dio.post('/games/rooms/$roomId/leave');
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
+  Future<void> updateGameState(String roomId, Map<String, dynamic> state) async {
+    try {
+      await _dio.put('/games/rooms/$roomId/state', data: state);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+  
   // Signaling Methods
   Future<void> sendSignalingMessage(Map<String, dynamic> message) async {
     try {
