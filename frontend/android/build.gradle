@@ -17,6 +17,19 @@ allprojects {
         google()
         mavenCentral()
     }
+    
+    // Fix for flutter_sound namespace issue
+    subprojects {
+        afterEvaluate { project ->
+            if (project.hasProperty('android')) {
+                project.android {
+                    if (namespace == null) {
+                        namespace project.android.defaultConfig.applicationId
+                    }
+                }
+            }
+        }
+    }
 }
 
 rootProject.buildDir = '../build'
