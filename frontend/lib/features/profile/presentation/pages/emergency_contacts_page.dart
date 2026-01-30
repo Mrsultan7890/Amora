@@ -782,7 +782,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> with Tick
       }
     }
   }
-}
+
   Widget _buildContactsTab() {
     if (_isLoading) {
       return const Center(
