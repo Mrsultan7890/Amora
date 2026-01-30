@@ -906,73 +906,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> with Tick
     );
   }
 
-  Widget _buildContactCard(EmergencyContact contact, int index) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: AmoraTheme.glassmorphism(
-        color: Colors.white,
-        borderRadius: 12,
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          backgroundColor: _getContactColor(contact.type),
-          child: Icon(
-            _getContactIcon(contact.type),
-            color: Colors.white,
-          ),
-        ),
-        title: Text(
-          contact.name,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AmoraTheme.deepMidnight,
-          ),
-        ),
-        subtitle: Text(
-          contact.phoneNumber,
-          style: TextStyle(
-            fontSize: 14,
-            color: AmoraTheme.deepMidnight.withOpacity(0.7),
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Switch(
-              value: contact.isEnabled,
-              onChanged: (value) => _toggleContact(contact, value),
-              activeColor: AmoraTheme.sunsetRose,
-            ),
-            PopupMenuButton(
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Text('Edit'),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Delete'),
-                ),
-              ],
-              onSelected: (value) {
-                if (value == 'edit') {
-                  _editContact(contact);
-                } else if (value == 'delete') {
-                  _deleteContact(contact);
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    ).animate()
-      .fadeIn(delay: (index * 100).ms, duration: 600.ms)
-      .slideX(begin: 0.3, end: 0);
-  }
 
-  Widget _buildVoiceSetupTab() {
     return Container(
       padding: const EdgeInsets.all(20),
       child: Column(
