@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'package:flutter_sound/flutter_sound.dart';
+import 'package:record/record.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,20 +11,14 @@ class EmergencyVoiceService {
   
   EmergencyVoiceService._();
   
-  FlutterSoundRecorder? _recorder;
-  FlutterSoundPlayer? _player;
+  final AudioRecorder _recorder = AudioRecorder();
+  final AudioPlayer _player = AudioPlayer();
   String? _recordedFilePath;
   bool _isRecording = false;
   
   static const String _voiceMessageKey = 'emergency_voice_message_path';
   
   Future<void> initialize() async {
-    _recorder = FlutterSoundRecorder();
-    _player = FlutterSoundPlayer();
-    
-    await _recorder!.openRecorder();
-    await _player!.openPlayer();
-    
     await _loadExistingVoiceMessage();
   }
   
@@ -53,11 +48,15 @@ class EmergencyVoiceService {
       }
       
       final directory = await getApplicationDocumentsDirectory();
-      final filePath = '${directory.path}/emergency_voice_${DateTime.now().millisecondsSinceEpoch}.aac';
+      final filePath = '${directory.path}/emergency_voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
       
-      await _recorder!.startRecorder(
-        toFile: filePath,
-        codec: Codec.aacADTS,
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
+        path: filePath,
       );
       
       _isRecording = true;
@@ -73,7 +72,7 @@ class EmergencyVoiceService {
     try {
       if (!_isRecording) return null;
       
-      final path = await _recorder!.stopRecorder();
+      final path = await _recorder.stop();
       _isRecording = false;
       
       if (path != null) {
@@ -97,10 +96,7 @@ class EmergencyVoiceService {
     if (_recordedFilePath == null) return;
     
     try {
-      await _player!.startPlayer(
-        fromURI: _recordedFilePath!,
-        codec: Codec.aacADTS,
-      );
+      await _player.play(DeviceFileSource(_recordedFilePath!));
       print('🔊 Playing emergency voice message');
     } catch (e) {
       print('❌ Failed to play recording: $e');
@@ -109,7 +105,7 @@ class EmergencyVoiceService {
   
   Future<void> stopPlaying() async {
     try {
-      await _player!.stopPlayer();
+      await _player.stop();
     } catch (e) {
       print('❌ Failed to stop playing: $e');
     }
@@ -158,7 +154,7 @@ class EmergencyVoiceService {
   }
   
   void dispose() {
-    _recorder?.closeRecorder();
-    _player?.closePlayer();
+    _recorder.dispose();
+    _player.dispose();
   }
 }

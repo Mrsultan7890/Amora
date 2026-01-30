@@ -36,7 +36,8 @@ dependencies:
   # Location & Maps
   geolocator: ^10.1.0
   # Audio recording
-  flutter_sound: ^9.2.13
+  record: ^5.0.4
+  audioplayers: ^5.2.1
   permission_handler: ^11.0.1
   path_provider: ^2.1.1
   sensors_plus: ^4.0.2
