@@ -71,6 +71,18 @@ class GameRoomService {
   Future<void> initialize() async {
     try {
       _roomController = StreamController<GameRoom>.broadcast();
+      
+      // Setup WebSocket for real-time game updates
+      final wsService = WebSocketService.instance;
+      wsService.onGameUpdate = (data) {
+        _handleGameUpdate(data);
+      };
+      
+      // Setup voice chat signaling
+      wsService.onVoiceChatSignal = (data) {
+        _handleVoiceChatSignal(data);
+      };
+      
       print('✅ Game room service initialized');
     } catch (e) {
       print('❌ Game room service initialization failed: $e');
@@ -88,6 +100,7 @@ class GameRoomService {
       _currentRoom = room;
       _roomController?.add(room);
       
+      await _initializeVoiceChat();
       print('✅ Game room created: ${room.id}');
       return room;
     } catch (e) {
@@ -102,6 +115,7 @@ class GameRoomService {
       _currentRoom = room;
       _roomController?.add(room);
       
+      await _initializeVoiceChat();
       print('✅ Mock game room created: $roomId');
       return room;
     }
@@ -128,6 +142,7 @@ class GameRoomService {
       _currentRoom = room;
       _roomController?.add(room);
       
+      await _initializeVoiceChat();
       print('✅ Joined game room: $roomId');
       return room;
     } catch (e) {
@@ -145,6 +160,7 @@ class GameRoomService {
       _currentRoom = room;
       _roomController?.add(room);
       
+      await _initializeVoiceChat();
       print('✅ Joined mock game room: $roomId');
       return room;
     }
@@ -152,10 +168,52 @@ class GameRoomService {
   
   Future<void> _initializeVoiceChat() async {
     try {
-      print('🎤 Voice chat disabled for demo mode');
-      // Skip voice chat initialization to prevent crashes
+      print('🎤 Initializing group voice chat...');
+      
+      // Start local audio stream for voice chat
+      _localStream = await navigator.mediaDevices.getUserMedia({
+        'audio': {
+          'echoCancellation': true,
+          'noiseSuppression': true,
+          'autoGainControl': true,
+        },
+        'video': false, // Audio only for games
+      });
+      
+      // Create peer connection for group audio
+      _peerConnection = await createPeerConnection({
+        'iceServers': [
+          {'urls': 'stun:stun.l.google.com:19302'},
+          {'urls': 'stun:stun1.l.google.com:19302'},
+        ]
+      });
+      
+      // Add local stream to peer connection
+      await _peerConnection!.addStream(_localStream!);
+      
+      // Handle remote audio streams from other players
+      _peerConnection!.onAddStream = (MediaStream stream) {
+        print('🔊 Remote player audio stream added');
+        _remoteStreams[stream.id] = stream;
+        // Audio will play automatically
+      };
+      
+      _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
+        // Send ICE candidate via WebSocket to other players
+        _sendVoiceChatSignal({
+          'type': 'ice-candidate',
+          'candidate': {
+            'candidate': candidate.candidate,
+            'sdpMid': candidate.sdpMid,
+            'sdpMLineIndex': candidate.sdpMLineIndex,
+          }
+        });
+      };
+      
+      print('✅ Group voice chat initialized successfully');
     } catch (e) {
       print('❌ Voice chat initialization failed: $e');
+      // Continue without voice chat
     }
   }
   
@@ -176,8 +234,12 @@ class GameRoomService {
       _currentRoom!.state = GameState.questioning;
       _roomController?.add(_currentRoom!);
       
-      // Skip backend update for demo
-      print('Game state updated locally');
+      // Send to backend
+      await _api.updateGameState(_currentRoom!.id, {
+        'state': 'questioning',
+        'selected_player': selectedPlayer.id,
+        'round': _currentRoom!.round,
+      });
       
     } catch (e) {
       onError?.call('Failed to spin bottle: $e');
@@ -192,8 +254,10 @@ class GameRoomService {
       _currentRoom!.state = GameState.answering;
       _roomController?.add(_currentRoom!);
       
-      // Skip backend update for demo
-      print('Question submitted locally');
+      await _api.updateGameState(_currentRoom!.id, {
+        'state': 'answering',
+        'question': question,
+      });
       
     } catch (e) {
       onError?.call('Failed to submit question: $e');
@@ -209,16 +273,42 @@ class GameRoomService {
     _currentRoom!.selectedPlayerId = null;
     _roomController?.add(_currentRoom!);
     
-    // Skip backend update for demo
-    print('Next round started locally');
+    await _api.updateGameState(_currentRoom!.id, {
+      'state': 'waiting',
+      'round': _currentRoom!.round,
+    });
   }
   
   Future<void> toggleMute() async {
-    // Mock mute toggle for demo
-    if (_currentRoom != null && _currentRoom!.players.isNotEmpty) {
-      _currentRoom!.players[0].isMuted = !_currentRoom!.players[0].isMuted;
-      _roomController?.add(_currentRoom!);
-      print('🎤 Voice ${_currentRoom!.players[0].isMuted ? "muted" : "unmuted"}');
+    if (_localStream != null) {
+      final audioTrack = _localStream!.getAudioTracks().first;
+      audioTrack.enabled = !audioTrack.enabled;
+      
+      // Update player mute status
+      if (_currentRoom != null) {
+        final currentUser = await _api.getCurrentUser();
+        final playerIndex = _currentRoom!.players.indexWhere((p) => p.id == currentUser.id);
+        if (playerIndex != -1) {
+          _currentRoom!.players[playerIndex].isMuted = !audioTrack.enabled;
+          _roomController?.add(_currentRoom!);
+          
+          // Notify other players about mute status
+          _sendVoiceChatSignal({
+            'type': 'mute-status',
+            'is_muted': !audioTrack.enabled,
+            'player_id': currentUser.id,
+          });
+        }
+      }
+      
+      print('🎤 Voice ${audioTrack.enabled ? "unmuted" : "muted"}');
+    } else {
+      // Mock mute toggle for demo when no voice stream
+      if (_currentRoom != null && _currentRoom!.players.isNotEmpty) {
+        _currentRoom!.players[0].isMuted = !_currentRoom!.players[0].isMuted;
+        _roomController?.add(_currentRoom!);
+        print('🎤 Voice ${_currentRoom!.players[0].isMuted ? "muted" : "unmuted"}');
+      }
     }
   }
   
@@ -266,9 +356,24 @@ class GameRoomService {
   
   Future<void> leaveRoom() async {
     try {
+      if (_currentRoom != null) {
+        await _api.leaveGameRoom(_currentRoom!.id);
+      }
+      
+      // Clean up voice chat
+      if (_localStream != null) {
+        _localStream!.getTracks().forEach((track) => track.stop());
+        _localStream = null;
+      }
+      
+      if (_peerConnection != null) {
+        await _peerConnection!.close();
+        _peerConnection = null;
+      }
+      
       _currentRoom = null;
       _remoteStreams.clear();
-      print('Left game room');
+      
     } catch (e) {
       print('Error leaving room: $e');
     }
@@ -293,8 +398,8 @@ class GameRoomService {
         });
       }
       
-      // Skip backend save for demo
-      print('Game state updated via WebSocket');
+      // Also save to backend
+      await _api.updateGameState(_currentRoom!.id, stateData);
     } catch (e) {
       onError?.call('Failed to update game state: $e');
     }
