@@ -906,7 +906,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> with Tick
     );
   }
 
-
+  Widget _buildVoiceSetupTab() {
     return Container(
       padding: const EdgeInsets.all(20),
       child: Column(
