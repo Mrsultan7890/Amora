@@ -40,34 +40,18 @@ class OfflineEmergencyService {
   Future<void> _loadContacts() async {
     final prefs = await SharedPreferences.getInstance();
     
-    // Always start with default contacts
-    _contacts = DefaultEmergencyContacts.getDefaults();
-    
-    // Then load any additional contacts from storage
+    // Load contacts from storage only
     final contactsJson = prefs.getString(_contactsKey);
     if (contactsJson != null && contactsJson.isNotEmpty) {
       try {
         final List<dynamic> contactsList = jsonDecode(contactsJson);
-        final storedContacts = contactsList.map((json) => EmergencyContact.fromJson(json)).toList();
-        
-        // Add non-default contacts
-        for (final contact in storedContacts) {
-          if (!['police', 'ambulance'].contains(contact.id)) {
-            _contacts.add(contact);
-          } else {
-            // Update default contact status if stored
-            final index = _contacts.indexWhere((c) => c.id == contact.id);
-            if (index != -1) {
-              _contacts[index] = contact;
-            }
-          }
-        }
+        _contacts = contactsList.map((json) => EmergencyContact.fromJson(json)).toList();
       } catch (e) {
-        // Keep default contacts if parsing fails
+        _contacts = [];
       }
+    } else {
+      _contacts = [];
     }
-    
-    await _saveContacts();
   }
   
   Future<void> _saveContacts() async {

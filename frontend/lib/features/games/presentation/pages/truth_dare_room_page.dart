@@ -60,7 +60,7 @@ class _TruthDareRoomPageState extends State<TruthDareRoomPage> {
   }
   
   Future<void> _spinBottle() async {
-    if (_room == null || _isSpinning || _room!.players.length < 2) return;
+    if (_room == null || _isSpinning || _room!.players.isEmpty) return;
     
     setState(() => _isSpinning = true);
     
@@ -402,11 +402,11 @@ class _TruthDareRoomPageState extends State<TruthDareRoomPage> {
             Container(
               decoration: BoxDecoration(gradient: AmoraTheme.primaryGradient, borderRadius: BorderRadius.circular(12)),
               child: TextButton(
-                onPressed: _room!.players.length >= 2 ? _spinBottle : null,
+                onPressed: _room!.players.isNotEmpty ? _spinBottle : null,
                 child: Text(
                   'Spin Bottle',
                   style: TextStyle(
-                    color: _room!.players.length >= 2 ? Colors.white : Colors.grey,
+                    color: _room!.players.isNotEmpty ? Colors.white : Colors.grey,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -434,9 +434,13 @@ class _TruthDareRoomPageState extends State<TruthDareRoomPage> {
   }
   
   String _getSelectedPlayerName() {
-    if (_room!.selectedPlayerId == null) return '';
-    final player = _room!.players.firstWhere((p) => p.id == _room!.selectedPlayerId);
-    return player.name;
+    if (_room!.selectedPlayerId == null || _room!.players.isEmpty) return '';
+    try {
+      final player = _room!.players.firstWhere((p) => p.id == _room!.selectedPlayerId);
+      return player.name;
+    } catch (e) {
+      return '';
+    }
   }
   
   bool _isCurrentUserSelected() {

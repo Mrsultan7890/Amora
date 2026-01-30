@@ -12,7 +12,10 @@ from app.api.routes import auth, users, swipes, matches, messages, upload, notif
 from app.services.websocket_manager import ConnectionManager
 
 # Create tables
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Database tables already exist or error: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

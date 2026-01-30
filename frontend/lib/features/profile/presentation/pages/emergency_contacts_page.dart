@@ -18,17 +18,25 @@ class EmergencyContactsPage extends StatefulWidget {
   State<EmergencyContactsPage> createState() => _EmergencyContactsPageState();
 }
 
-class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
+class _EmergencyContactsPageState extends State<EmergencyContactsPage> with TickerProviderStateMixin {
   final OfflineEmergencyService _emergencyService = OfflineEmergencyService.instance;
   List<EmergencyContact> _contacts = [];
   bool _isLoading = true;
   Map<String, bool> _permissionStatus = {};
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadContacts();
     _checkPermissions();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadContacts() async {
@@ -180,292 +188,184 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
               ),
 
               // Info card
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: AmoraTheme.glassmorphism(
-                  color: Colors.red.shade50,
-                  borderRadius: 12,
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.warning,
-                          color: Colors.red.shade600,
-                          size: 24,
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: AmoraTheme.glassmorphism(
+                    color: Colors.red.shade50,
+                    borderRadius: 12,
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.warning,
+                            color: Colors.red.shade600,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Emergency Contacts',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'These contacts will receive SMS and calls during emergency situations, even without internet.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
                         ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Emergency Contacts',
+                      ),
+                    ],
+                  ),
+                ).animate()
+                  .fadeIn(duration: 600.ms)
+                  .slideY(begin: 0.3, end: 0),
+              ),
+
+              // Permission status card
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: AmoraTheme.glassmorphism(
+                    color: Colors.blue.shade50,
+                    borderRadius: 12,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.verified_user,
+                            color: Colors.blue.shade600,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Permission Status',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.red,
+                              color: Colors.blue,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'These contacts will receive SMS and calls during emergency situations, even without internet.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-              ).animate()
-                .fadeIn(duration: 600.ms)
-                .slideY(begin: 0.3, end: 0),
-
-              // Permission status card
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: AmoraTheme.glassmorphism(
-                  color: Colors.blue.shade50,
-                  borderRadius: 12,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.verified_user,
-                          color: Colors.blue.shade600,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Permission Status',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () async {
-                            await _checkPermissions();
-                          },
-                          child: const Text('Refresh'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ..._permissionStatus.entries.map((entry) => 
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Icon(
-                              entry.value ? Icons.check_circle : Icons.cancel,
-                              color: entry.value ? Colors.green : Colors.red,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                entry.key,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: entry.value ? Colors.green.shade700 : Colors.red.shade700,
-                                ),
-                              ),
-                            ),
-                            if (!entry.value)
-                              TextButton(
-                                onPressed: () => _requestSpecificPermission(entry.key),
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                ),
-                                child: const Text(
-                                  'Grant',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ).toList(),
-                    if (_permissionStatus.values.any((granted) => !granted))
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
+                          const Spacer(),
+                          TextButton(
                             onPressed: () async {
-                              await SmsService.requestSpecialPermissions();
-                              await _emergencyService.requestPermissions();
-                              await Future.delayed(const Duration(seconds: 1));
                               await _checkPermissions();
                             },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: const Text('Grant All Permissions'),
+                            child: const Text('Refresh'),
                           ),
-                        ),
-                      ),
-                  ],
-                ),
-              ).animate()
-                .fadeIn(duration: 600.ms)
-                .slideY(begin: 0.3, end: 0),
-
-              // Contacts list
-              _isLoading
-                  ? const SliverFillRemaining(
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AmoraTheme.sunsetRose,
-                          ),
-                        ),
-                      ),
-                    )
-                  : _contacts.isEmpty
-                      ? SliverFillRemaining(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.contact_emergency,
-                                  size: 64,
-                                  color: AmoraTheme.sunsetRose,
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'No Emergency Contacts',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: AmoraTheme.deepMidnight,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Add emergency contacts to enable\nshake detection alerts',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: AmoraTheme.deepMidnight.withOpacity(0.7),
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                ElevatedButton(
-                                  onPressed: _addContact,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AmoraTheme.sunsetRose,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  child: const Text('Add First Contact'),
-                                ),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const EmergencyVoiceSetupPage(),
-                                      ),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.orange,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  child: const Text('🎤 Setup Voice Message'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      : SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              if (index < _contacts.length) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                  child: _buildContactCard(_contacts[index], index),
-                                );
-                              }
-                              return null;
-                            },
-                            childCount: _contacts.length,
-                          ),
-                        ),
-              
-              // Test buttons
-              SliverToBoxAdapter(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _testEmergencySystem,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Test Emergency System',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                        ],
                       ),
                       const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _testOfflineEmergency,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                      ..._permissionStatus.entries.map((entry) => 
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                entry.value ? Icons.check_circle : Icons.cancel,
+                                color: entry.value ? Colors.green : Colors.red,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  entry.key,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: entry.value ? Colors.green.shade700 : Colors.red.shade700,
+                                  ),
+                                ),
+                              ),
+                              if (!entry.value)
+                                TextButton(
+                                  onPressed: () => _requestSpecificPermission(entry.key),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  ),
+                                  child: const Text(
+                                    'Grant',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                            ],
                           ),
-                          child: const Text(
-                            '🚨 TEST OFFLINE EMERGENCY 🚨',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                        ),
+                      ).toList(),
+                      if (_permissionStatus.values.any((granted) => !granted))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                await SmsService.requestSpecialPermissions();
+                                await _emergencyService.requestPermissions();
+                                await Future.delayed(const Duration(seconds: 1));
+                                await _checkPermissions();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text('Grant All Permissions'),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20), // Extra bottom padding
                     ],
                   ),
+                ).animate()
+                  .fadeIn(duration: 600.ms)
+                  .slideY(begin: 0.3, end: 0),
+              ),
+
+              // Tabs
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      gradient: AmoraTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: AmoraTheme.deepMidnight,
+                    tabs: const [
+                      Tab(text: 'My Contacts'),
+                      Tab(text: 'Voice Setup'),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Tab Content
+              SliverFillRemaining(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildContactsTab(),
+                    _buildVoiceSetupTab(),
+                  ],
                 ),
               ),
             ],
@@ -883,3 +783,375 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     }
   }
 }
+  Widget _buildContactsTab() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AmoraTheme.sunsetRose),
+        ),
+      );
+    }
+
+    if (_contacts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.contact_emergency,
+              size: 64,
+              color: AmoraTheme.sunsetRose,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No Emergency Contacts',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AmoraTheme.deepMidnight,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add emergency contacts to enable\nshake detection alerts',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AmoraTheme.deepMidnight.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _addContact,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AmoraTheme.sunsetRose,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text('Add First Contact'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _contacts.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: _buildContactCard(_contacts[index], index),
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _testEmergencySystem,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Test Emergency System',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _testOfflineEmergency,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '🚨 TEST OFFLINE EMERGENCY 🚨',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVoiceSetupTab() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: AmoraTheme.glassmorphism(color: Colors.white, borderRadius: 12),
+            child: const Column(
+              children: [
+                Icon(Icons.record_voice_over, size: 48, color: AmoraTheme.sunsetRose),
+                SizedBox(height: 12),
+                Text(
+                  'Emergency Voice Message',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AmoraTheme.deepMidnight),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Record a voice message that will be sent to your emergency contacts when you shake your phone in distress.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Voice Setup Content
+          Expanded(
+            child: _VoiceSetupContent(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VoiceSetupContent extends StatefulWidget {
+  @override
+  State<_VoiceSetupContent> createState() => _VoiceSetupContentState();
+}
+
+class _VoiceSetupContentState extends State<_VoiceSetupContent> {
+  final EmergencyVoiceService _voiceService = EmergencyVoiceService.instance;
+  bool _isRecording = false;
+  bool _isPlaying = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _initializeVoiceService();
+  }
+  
+  Future<void> _initializeVoiceService() async {
+    await _voiceService.initialize();
+    setState(() {});
+  }
+  
+  Future<void> _startRecording() async {
+    final path = await _voiceService.startRecording();
+    if (path != null) {
+      setState(() => _isRecording = true);
+    } else {
+      _showError('Failed to start recording. Check microphone permission.');
+    }
+  }
+  
+  Future<void> _stopRecording() async {
+    final path = await _voiceService.stopRecording();
+    setState(() => _isRecording = false);
+    
+    if (path != null) {
+      _showSuccess('Emergency voice message saved!');
+    }
+  }
+  
+  Future<void> _playRecording() async {
+    setState(() => _isPlaying = true);
+    await _voiceService.playRecording();
+    
+    await Future.delayed(const Duration(seconds: 3));
+    await _voiceService.stopPlaying();
+    if (mounted) setState(() => _isPlaying = false);
+  }
+  
+  Future<void> _deleteRecording() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Voice Message'),
+        content: const Text('Are you sure you want to delete your emergency voice message?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm == true) {
+      await _voiceService.deleteRecording();
+      setState(() {});
+      _showSuccess('Voice message deleted');
+    }
+  }
+  
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+  
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Recording Status
+        if (_voiceService.hasRecording)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: AmoraTheme.glassmorphism(color: Colors.green.withOpacity(0.1), borderRadius: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Voice message ready', style: TextStyle(fontWeight: FontWeight.w600)),
+                      FutureBuilder<int>(
+                        future: _voiceService.getRecordingDuration(),
+                        builder: (context, snapshot) {
+                          final duration = snapshot.data ?? 0;
+                          return Text('Duration: ${duration}s', style: const TextStyle(color: Colors.grey));
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
+        const SizedBox(height: 20),
+        
+        // Recording Controls
+        if (_isRecording)
+          Column(
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.stop, color: Colors.white, size: 32),
+              ),
+              const SizedBox(height: 12),
+              const Text('Recording...', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _stopRecording,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Stop Recording', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          )
+        else
+          Column(
+            children: [
+              GestureDetector(
+                onTap: _startRecording,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: AmoraTheme.primaryGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.mic, color: Colors.white, size: 32),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('Tap to Record', style: TextStyle(fontWeight: FontWeight.w600)),
+              
+              const SizedBox(height: 20),
+              
+              if (_voiceService.hasRecording) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _isPlaying ? null : _playRecording,
+                      icon: Icon(_isPlaying ? Icons.volume_up : Icons.play_arrow),
+                      label: Text(_isPlaying ? 'Playing...' : 'Play'),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _deleteRecording,
+                      icon: const Icon(Icons.delete),
+                      label: const Text('Delete'),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        
+        const Spacer(),
+        
+        // Instructions
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: AmoraTheme.glassmorphism(color: Colors.orange.withOpacity(0.1), borderRadius: 12),
+          child: const Column(
+            children: [
+              Icon(Icons.info_outline, color: Colors.orange),
+              SizedBox(height: 8),
+              Text(
+                'Tips for Emergency Voice Message:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '• Keep it short (10-30 seconds)\n• Speak clearly and calmly\n• Include your name and situation\n• Example: "This is John, I need help immediately"',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }

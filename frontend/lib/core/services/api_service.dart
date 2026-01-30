@@ -152,6 +152,7 @@ class ApiService {
       final response = await _dio.get('/auth/me');
       return UserModel.fromJson(response.data);
     } catch (e) {
+      print('Error loading current user: $e');
       throw _handleError(e);
     }
   }
@@ -188,6 +189,7 @@ class ApiService {
           .map((json) => UserModel.fromJson(json))
           .toList();
     } catch (e) {
+      print('Error loading discover profiles: $e');
       throw _handleError(e);
     }
   }
@@ -446,6 +448,7 @@ class ApiService {
       final response = await _dio.get('/feed/photos');
       return response.data;
     } catch (e) {
+      print('Error loading feed photos: $e');
       throw _handleError(e);
     }
   }
