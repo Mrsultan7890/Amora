@@ -62,9 +62,9 @@ dependencies:
   flutter_webrtc: ^0.9.48
   connectivity_plus: ^5.0.2
   
-  # Smartwatch connectivity
-  wearable: ^1.0.0
-  watch_connectivity: ^1.0.0
+  # Smartwatch connectivity (real packages)
+  health: ^10.2.0
+  device_info_plus: ^9.1.0
 
 dev_dependencies:
   flutter_lints: ^3.0.0

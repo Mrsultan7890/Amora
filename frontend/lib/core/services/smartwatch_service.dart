@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:health/health.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'offline_emergency_service.dart';
 
 class SmartwatchService {
@@ -9,11 +11,15 @@ class SmartwatchService {
   factory SmartwatchService() => _instance;
   SmartwatchService._internal();
 
-  static const MethodChannel _channel = MethodChannel('amora/smartwatch');
   final OfflineEmergencyService _emergencyService = OfflineEmergencyService();
+  final Health _health = Health();
+  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
   
   StreamController<Map<String, dynamic>>? _watchEventController;
+  Timer? _healthMonitorTimer;
   bool _isListening = false;
+  double? _lastHeartRate;
+  DateTime? _lastMovementTime;
 
   // Initialize smartwatch service
   Future<void> initialize() async {
@@ -22,58 +28,181 @@ class SmartwatchService {
     _watchEventController = StreamController<Map<String, dynamic>>.broadcast();
     _isListening = true;
     
-    // Set up method call handler for watch events
-    _channel.setMethodCallHandler(_handleWatchEvents);
+    // Request health permissions
+    await _requestHealthPermissions();
     
-    // Start listening for watch connections
-    await _startWatchListener();
+    // Start health monitoring
+    await _startHealthMonitoring();
   }
 
-  // Handle incoming watch events
-  Future<dynamic> _handleWatchEvents(MethodCall call) async {
-    switch (call.method) {
-      case 'onWatchConnected':
-        _onWatchConnected(call.arguments);
-        break;
-      case 'onWatchDisconnected':
-        _onWatchDisconnected();
-        break;
-      case 'onEmergencyTriggered':
-        await _onEmergencyTriggered(call.arguments);
-        break;
-      case 'onFallDetected':
-        await _onFallDetected(call.arguments);
-        break;
-      case 'onHeartRateAlert':
-        await _onHeartRateAlert(call.arguments);
-        break;
-      case 'onSOSButtonPressed':
-        await _onSOSButtonPressed(call.arguments);
-        break;
+  // Request health permissions
+  Future<void> _requestHealthPermissions() async {
+    try {
+      final types = [
+        HealthDataType.HEART_RATE,
+        HealthDataType.STEPS,
+        HealthDataType.MOVE_MINUTES,
+        HealthDataType.DISTANCE_DELTA,
+      ];
+      
+      final permissions = [
+        HealthDataAccess.READ,
+        HealthDataAccess.READ,
+        HealthDataAccess.READ,
+        HealthDataAccess.READ,
+      ];
+      
+      await _health.requestAuthorization(types, permissions: permissions);
+    } catch (e) {
+      print('Error requesting health permissions: $e');
     }
   }
 
-  // Connect to smartwatch
+  // Connect to smartwatch (real implementation)
   Future<Map<String, dynamic>> connectWatch() async {
     try {
-      final result = await _channel.invokeMethod('connectWatch');
-      if (result['success']) {
+      // Check if health data is available (indicates smartwatch connection)
+      final now = DateTime.now();
+      final yesterday = now.subtract(const Duration(days: 1));
+      
+      final healthData = await _health.getHealthDataFromTypes(
+        yesterday,
+        now,
+        [HealthDataType.HEART_RATE, HealthDataType.STEPS],
+      );
+      
+      if (healthData.isNotEmpty) {
+        // Detect device type
+        String deviceName = 'Unknown Smartwatch';
+        try {
+          final androidInfo = await _deviceInfo.androidInfo;
+          deviceName = '${androidInfo.brand} ${androidInfo.model}';
+        } catch (e) {
+          deviceName = 'Connected Smartwatch';
+        }
+        
+        final result = {
+          'success': true,
+          'device': deviceName,
+          'health_data_available': true,
+        };
+        
         await _saveWatchSettings({
           'connected': true,
           'device': result['device'],
           'connected_at': DateTime.now().toIso8601String(),
         });
+        
+        // Start monitoring
+        await _startHealthMonitoring();
+        
+        return result;
+      } else {
+        return {
+          'success': false,
+          'error': 'No smartwatch detected. Please ensure your watch is connected and health permissions are granted.',
+        };
       }
-      return result;
     } catch (e) {
-      return {'success': false, 'error': e.toString()};
+      return {'success': false, 'error': 'Connection failed: ${e.toString()}'};
+    }
+  }
+
+  // Start health monitoring
+  Future<void> _startHealthMonitoring() async {
+    _healthMonitorTimer?.cancel();
+    
+    _healthMonitorTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+      await _checkHealthData();
+    });
+  }
+
+  // Check health data for emergency conditions
+  Future<void> _checkHealthData() async {
+    try {
+      final settings = await getConnectionStatus();
+      if (!settings['connected'] || !settings['emergency_enabled']) return;
+      
+      final now = DateTime.now();
+      final fiveMinutesAgo = now.subtract(const Duration(minutes: 5));
+      
+      // Check heart rate
+      if (settings['heart_rate_monitoring']) {
+        await _checkHeartRate(fiveMinutesAgo, now);
+      }
+      
+      // Check for fall detection (using movement data)
+      if (settings['fall_detection']) {
+        await _checkFallDetection(fiveMinutesAgo, now);
+      }
+      
+    } catch (e) {
+      print('Error checking health data: $e');
+    }
+  }
+
+  // Check heart rate for abnormalities
+  Future<void> _checkHeartRate(DateTime start, DateTime end) async {
+    try {
+      final heartRateData = await _health.getHealthDataFromTypes(
+        start,
+        end,
+        [HealthDataType.HEART_RATE],
+      );
+      
+      if (heartRateData.isNotEmpty) {
+        final latestHeartRate = heartRateData.last.value as NumericHealthValue;
+        final currentRate = latestHeartRate.numericValue.toDouble();
+        
+        // Check for dangerous heart rate (>150 or <40 BPM)
+        if (currentRate > 150 || currentRate < 40) {
+          await _onHeartRateAlert({
+            'heart_rate': currentRate,
+            'timestamp': DateTime.now().toIso8601String(),
+          });
+        }
+        
+        _lastHeartRate = currentRate;
+      }
+    } catch (e) {
+      print('Error checking heart rate: $e');
+    }
+  }
+
+  // Check for fall detection using movement patterns
+  Future<void> _checkFallDetection(DateTime start, DateTime end) async {
+    try {
+      final stepsData = await _health.getHealthDataFromTypes(
+        start,
+        end,
+        [HealthDataType.STEPS],
+      );
+      
+      // If no movement for extended period, might indicate fall
+      if (stepsData.isEmpty) {
+        final timeSinceLastMovement = _lastMovementTime != null 
+            ? DateTime.now().difference(_lastMovementTime!)
+            : Duration.zero;
+            
+        // If no movement for 30 minutes, trigger alert
+        if (timeSinceLastMovement.inMinutes > 30) {
+          await _onFallDetected({
+            'no_movement_duration': timeSinceLastMovement.inMinutes,
+            'timestamp': DateTime.now().toIso8601String(),
+          });
+        }
+      } else {
+        _lastMovementTime = DateTime.now();
+      }
+    } catch (e) {
+      print('Error checking fall detection: $e');
     }
   }
 
   // Disconnect smartwatch
   Future<void> disconnectWatch() async {
     try {
-      await _channel.invokeMethod('disconnectWatch');
+      _healthMonitorTimer?.cancel();
       await _saveWatchSettings({
         'connected': false,
         'device': '',
@@ -90,13 +219,7 @@ class SmartwatchService {
       final prefs = await SharedPreferences.getInstance();
       final settings = prefs.getString('watch_settings');
       if (settings != null) {
-        final data = json.decode(settings);
-        
-        // Check if watch is actually connected
-        final isConnected = await _channel.invokeMethod('isWatchConnected');
-        data['connected'] = isConnected ?? false;
-        
-        return data;
+        return json.decode(settings);
       }
       return {
         'connected': false,
@@ -119,10 +242,15 @@ class SmartwatchService {
   // Update emergency settings
   Future<void> updateEmergencySettings(bool enabled) async {
     try {
-      await _channel.invokeMethod('updateEmergencySettings', {'enabled': enabled});
       final settings = await getConnectionStatus();
       settings['emergency_enabled'] = enabled;
       await _saveWatchSettings(settings);
+      
+      if (enabled && settings['connected']) {
+        await _startHealthMonitoring();
+      } else {
+        _healthMonitorTimer?.cancel();
+      }
     } catch (e) {
       print('Error updating emergency settings: $e');
     }
@@ -131,7 +259,6 @@ class SmartwatchService {
   // Update fall detection
   Future<void> updateFallDetection(bool enabled) async {
     try {
-      await _channel.invokeMethod('updateFallDetection', {'enabled': enabled});
       final settings = await getConnectionStatus();
       settings['fall_detection'] = enabled;
       await _saveWatchSettings(settings);
@@ -143,7 +270,6 @@ class SmartwatchService {
   // Update heart rate monitoring
   Future<void> updateHeartRateMonitoring(bool enabled) async {
     try {
-      await _channel.invokeMethod('updateHeartRateMonitoring', {'enabled': enabled});
       final settings = await getConnectionStatus();
       settings['heart_rate_monitoring'] = enabled;
       await _saveWatchSettings(settings);
@@ -161,22 +287,15 @@ class SmartwatchService {
     });
   }
 
+  // Manual emergency trigger (can be called from watch app)
+  Future<void> triggerManualEmergency() async {
+    await _onEmergencyTriggered({
+      'type': 'manual',
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
   // Event handlers
-  void _onWatchConnected(dynamic arguments) {
-    _watchEventController?.add({
-      'event': 'connected',
-      'device': arguments['device'],
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-  }
-
-  void _onWatchDisconnected() {
-    _watchEventController?.add({
-      'event': 'disconnected',
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-  }
-
   Future<void> _onEmergencyTriggered(dynamic arguments) async {
     await _triggerEmergency({
       'type': 'emergency',
@@ -190,7 +309,7 @@ class SmartwatchService {
     await _triggerEmergency({
       'type': 'fall_detection',
       'source': 'watch_fall_sensor',
-      'message': 'Fall detected by smartwatch! Please check on me.',
+      'message': 'Possible fall detected by smartwatch! No movement for ${arguments['no_movement_duration']} minutes.',
       'data': arguments,
     });
   }
@@ -199,16 +318,7 @@ class SmartwatchService {
     await _triggerEmergency({
       'type': 'heart_rate_alert',
       'source': 'watch_heart_sensor',
-      'message': 'Abnormal heart rate detected by smartwatch. Need assistance.',
-      'data': arguments,
-    });
-  }
-
-  Future<void> _onSOSButtonPressed(dynamic arguments) async {
-    await _triggerEmergency({
-      'type': 'sos_button',
-      'source': 'watch_sos_button',
-      'message': 'SOS button pressed on smartwatch! Emergency assistance needed.',
+      'message': 'Abnormal heart rate detected: ${arguments['heart_rate']} BPM. Need assistance.',
       'data': arguments,
     });
   }
@@ -226,17 +336,15 @@ class SmartwatchService {
       // Log emergency event
       await _logEmergencyEvent(emergencyData);
       
+      // Notify listeners
+      _watchEventController?.add({
+        'event': 'emergency_triggered',
+        'data': emergencyData,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      
     } catch (e) {
       print('Error triggering emergency from watch: $e');
-    }
-  }
-
-  // Start listening for watch events
-  Future<void> _startWatchListener() async {
-    try {
-      await _channel.invokeMethod('startWatchListener');
-    } catch (e) {
-      print('Error starting watch listener: $e');
     }
   }
 
@@ -284,9 +392,56 @@ class SmartwatchService {
     }
   }
 
+  // Get current health stats
+  Future<Map<String, dynamic>> getCurrentHealthStats() async {
+    try {
+      final now = DateTime.now();
+      final oneHourAgo = now.subtract(const Duration(hours: 1));
+      
+      final heartRateData = await _health.getHealthDataFromTypes(
+        oneHourAgo,
+        now,
+        [HealthDataType.HEART_RATE],
+      );
+      
+      final stepsData = await _health.getHealthDataFromTypes(
+        DateTime(now.year, now.month, now.day),
+        now,
+        [HealthDataType.STEPS],
+      );
+      
+      double? currentHeartRate;
+      int todaySteps = 0;
+      
+      if (heartRateData.isNotEmpty) {
+        final latest = heartRateData.last.value as NumericHealthValue;
+        currentHeartRate = latest.numericValue.toDouble();
+      }
+      
+      if (stepsData.isNotEmpty) {
+        final latest = stepsData.last.value as NumericHealthValue;
+        todaySteps = latest.numericValue.toInt();
+      }
+      
+      return {
+        'heart_rate': currentHeartRate,
+        'steps_today': todaySteps,
+        'last_updated': DateTime.now().toIso8601String(),
+      };
+    } catch (e) {
+      return {
+        'heart_rate': null,
+        'steps_today': 0,
+        'last_updated': DateTime.now().toIso8601String(),
+        'error': e.toString(),
+      };
+    }
+  }
+
   // Dispose
   void dispose() {
     _watchEventController?.close();
+    _healthMonitorTimer?.cancel();
     _isListening = false;
   }
 }

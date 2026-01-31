@@ -4,6 +4,7 @@ import 'dart:math';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/game_room_service.dart';
 import '../widgets/bottle_widget.dart';
+import '../widgets/collapsible_chat_widget.dart';
 
 class TruthDareRoomPage extends StatefulWidget {
   final String? roomId;
@@ -21,6 +22,7 @@ class _TruthDareRoomPageState extends State<TruthDareRoomPage> {
   GameRoom? _room;
   bool _isSpinning = false;
   int _selectedPlayerIndex = 0;
+  bool _isChatExpanded = false;
   
   @override
   void initState() {
@@ -130,29 +132,41 @@ class _TruthDareRoomPageState extends State<TruthDareRoomPage> {
       body: Container(
         decoration: const BoxDecoration(gradient: AmoraTheme.backgroundGradient),
         child: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              // Header
-              _buildHeader(),
-              
-              // Game Area
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // Players Circle
-                      SizedBox(height: 300, child: _buildPlayersCircle()),
-                      
-                      // Game Status
-                      _buildGameStatus(),
-                      
-                      // Controls
-                      _buildControls(),
-                      
-                      const SizedBox(height: 20),
-                    ],
+              // Main game content
+              Column(
+                children: [
+                  // Header
+                  _buildHeader(),
+                  
+                  // Game Area
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // Players Circle
+                          SizedBox(height: 300, child: _buildPlayersCircle()),
+                          
+                          // Game Status
+                          _buildGameStatus(),
+                          
+                          // Controls
+                          _buildControls(),
+                          
+                          const SizedBox(height: 80), // Space for chat button
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
+              ),
+              
+              // Collapsible Chat Widget
+              CollapsibleChatWidget(
+                gameService: _gameService,
+                isExpanded: _isChatExpanded,
+                onToggle: () => setState(() => _isChatExpanded = !_isChatExpanded),
               ),
             ],
           ),
@@ -191,21 +205,21 @@ class _TruthDareRoomPageState extends State<TruthDareRoomPage> {
           Row(
             children: [
               IconButton(
-                onPressed: _gameService.toggleMute,
+                onPressed: () => setState(() => _isChatExpanded = !_isChatExpanded),
                 icon: Icon(
-                  _gameService.isMuted ? Icons.mic_off : Icons.mic,
-                  color: _gameService.isMuted ? Colors.red : AmoraTheme.sunsetRose,
+                  Icons.chat_bubble,
+                  color: AmoraTheme.sunsetRose,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _gameService.isVoiceChatActive ? Colors.green : Colors.grey,
+                  color: Colors.green,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  _gameService.isVoiceChatActive ? 'LIVE' : 'OFF',
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                child: const Text(
+                  'CHAT',
+                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
