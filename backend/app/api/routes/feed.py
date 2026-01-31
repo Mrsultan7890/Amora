@@ -23,7 +23,7 @@ async def get_feed_photos(
         # Get current user's preferences for better matching
         current_user_data = db.execute(
             text("""
-                SELECT age, location, interests, looking_for 
+                SELECT age, latitude, longitude, interests, gender 
                 FROM users 
                 WHERE id = :user_id
             """),
@@ -34,25 +34,27 @@ async def get_feed_photos(
             return {"feed_items": []}
         
         user_age = current_user_data[0]
-        user_location = current_user_data[1]
-        user_interests = json.loads(current_user_data[2]) if current_user_data[2] else []
-        user_looking_for = current_user_data[3]
+        user_lat = current_user_data[1]
+        user_lng = current_user_data[2]
+        user_interests = json.loads(current_user_data[3]) if current_user_data[3] else []
+        user_gender = current_user_data[4]
         
         # Smart feed algorithm: prioritize by compatibility
         users_query = db.execute(
             text("""
-                SELECT id, name, age, photos, location, interests, gender, created_at,
+                SELECT id, name, age, photos, latitude, longitude, interests, gender, created_at,
                        CASE 
                            WHEN ABS(age - :user_age) <= 5 THEN 10
                            WHEN ABS(age - :user_age) <= 10 THEN 5
                            ELSE 1
                        END as age_score,
                        CASE 
-                           WHEN location = :user_location THEN 15
+                           WHEN latitude IS NOT NULL AND longitude IS NOT NULL 
+                           AND :user_lat IS NOT NULL AND :user_lng IS NOT NULL THEN 15
                            ELSE 0
                        END as location_score,
                        CASE 
-                           WHEN gender = :looking_for THEN 20
+                           WHEN gender != :user_gender THEN 20
                            ELSE 5
                        END as gender_score
                 FROM users 
@@ -66,8 +68,9 @@ async def get_feed_photos(
             {
                 "current_user_id": current_user.id,
                 "user_age": user_age,
-                "user_location": user_location,
-                "looking_for": user_looking_for
+                "user_lat": user_lat,
+                "user_lng": user_lng,
+                "user_gender": user_gender
             }
         ).fetchall()
         
@@ -99,7 +102,7 @@ async def get_feed_photos(
         for user in users_query:
             try:
                 photos = json.loads(user[3]) if user[3] else []
-                user_interests_list = json.loads(user[5]) if user[5] else []
+                user_interests_list = json.loads(user[6]) if user[6] else []
                 
                 # Calculate interest compatibility
                 common_interests = len(set(user_interests) & set(user_interests_list))
@@ -107,7 +110,7 @@ async def get_feed_photos(
                 
                 if photos:
                     # Show all photos but prioritize by algorithm score
-                    total_score = user[8] + user[9] + user[10] + interest_score
+                    total_score = user[9] + user[10] + user[11] + interest_score
                     
                     for i, photo_url in enumerate(photos):
                         photo_id = f"{user[0]}_{i}"
@@ -127,8 +130,8 @@ async def get_feed_photos(
                             "user_name": user[1],
                             "user_age": user[2],
                             "photo_url": photo_url,
-                            "location": user[4],
-                            "timestamp": user[7].isoformat() if hasattr(user[7], 'isoformat') else str(user[7]),
+                            "location": f"{user[4]},{user[5]}" if user[4] and user[5] else "Unknown",
+                            "timestamp": user[8].isoformat() if hasattr(user[8], 'isoformat') else str(user[8]),
                             "likes_count": base_likes,
                             "is_liked": photo_id in user_liked_photos,
                             "compatibility_score": total_score,

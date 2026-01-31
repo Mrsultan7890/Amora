@@ -401,61 +401,101 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
     );
   }
   
-  void _activateBoost() {
-    // Simulate ad watching and boost activation
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: AmoraTheme.glassmorphism(
-            color: Colors.white,
-            borderRadius: 20,
+  void _activateBoost() async {
+    try {
+      // Call boost API
+      final response = await _apiService.activateBoost(
+        boostType: 'free',
+        durationMinutes: 30,
+      );
+      
+      if (response['success'] == true) {
+        // Show success dialog
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: AmoraTheme.glassmorphism(
+                  color: Colors.white,
+                  borderRadius: 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.flash_on,
+                      color: AmoraTheme.warmGold,
+                      size: 64,
+                    ).animate()
+                      .scale(duration: 600.ms, curve: Curves.elasticOut)
+                      .then()
+                      .shimmer(duration: 1000.ms),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Boost Activated! 🚀',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AmoraTheme.deepMidnight,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your profile is now boosted for ${response['duration_minutes']} minutes!\n\nYou\'ll get 10x more visibility and matches.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AmoraTheme.deepMidnight,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: AmoraTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'Awesome! 🔥',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+      } else {
+        // Show error or already active message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response['message'] ?? 'Boost activation failed'),
+              backgroundColor: response['boost_active'] == true ? Colors.orange : Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error activating boost: $e'),
+            backgroundColor: Colors.red,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.flash_on,
-                color: AmoraTheme.warmGold,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Boost Activated!',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AmoraTheme.deepMidnight,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Your profile is now boosted for 30 minutes!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AmoraTheme.deepMidnight,
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Awesome!',
-                  style: TextStyle(
-                    color: AmoraTheme.sunsetRose,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+        );
+      }
+    }
   }
 
   @override
@@ -478,21 +518,49 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
                   children: [
                     GestureDetector(
                       onTap: () {
-                        // Show boost/premium features
                         _showBoostDialog();
                       },
                       child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: AmoraTheme.glassmorphism(
-                          color: Colors.white,
-                          borderRadius: 16,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AmoraTheme.warmGold, Color(0xFFFFD700)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AmoraTheme.warmGold.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: const Icon(
-                          Icons.flash_on,
-                          color: AmoraTheme.warmGold,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.flash_on,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Boost',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                    ).animate()
+                      .shimmer(duration: 2000.ms, delay: 1000.ms)
+                      .then()
+                      .shimmer(duration: 2000.ms, delay: 3000.ms),
                     
                     const Text(
                       'Discover',

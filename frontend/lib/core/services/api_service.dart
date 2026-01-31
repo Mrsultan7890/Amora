@@ -523,13 +523,13 @@ class ApiService {
     }
   }
   
-  // Features Methods
+  // Boost Methods
   Future<Map<String, dynamic>> activateBoost({
     int durationMinutes = 30,
     String boostType = 'free',
   }) async {
     try {
-      final response = await _dio.post('/features/boost', data: {
+      final response = await _dio.post('/boost/activate', data: {
         'duration_minutes': durationMinutes,
         'boost_type': boostType,
       });
@@ -541,7 +541,7 @@ class ApiService {
   
   Future<Map<String, dynamic>> getBoostStatus() async {
     try {
-      final response = await _dio.get('/features/boost/status');
+      final response = await _dio.get('/boost/status');
       return response.data;
     } catch (e) {
       throw _handleError(e);
