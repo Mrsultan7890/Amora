@@ -170,6 +170,13 @@ class GameRoomService {
     try {
       print('🎤 Initializing group voice chat...');
       
+      // Check if permissions are available first
+      final hasPermission = await _checkMicrophonePermission();
+      if (!hasPermission) {
+        print('⚠️ Microphone permission not granted, skipping voice chat');
+        return;
+      }
+      
       // Start local audio stream for voice chat
       _localStream = await navigator.mediaDevices.getUserMedia({
         'audio': {
@@ -189,16 +196,18 @@ class GameRoomService {
       });
       
       // Add local stream to peer connection
-      await _peerConnection!.addStream(_localStream!);
+      if (_localStream != null && _peerConnection != null) {
+        await _peerConnection!.addStream(_localStream!);
+      }
       
       // Handle remote audio streams from other players
-      _peerConnection!.onAddStream = (MediaStream stream) {
+      _peerConnection?.onAddStream = (MediaStream stream) {
         print('🔊 Remote player audio stream added');
         _remoteStreams[stream.id] = stream;
         // Audio will play automatically
       };
       
-      _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
+      _peerConnection?.onIceCandidate = (RTCIceCandidate candidate) {
         // Send ICE candidate via WebSocket to other players
         _sendVoiceChatSignal({
           'type': 'ice-candidate',
@@ -213,7 +222,21 @@ class GameRoomService {
       print('✅ Group voice chat initialized successfully');
     } catch (e) {
       print('❌ Voice chat initialization failed: $e');
-      // Continue without voice chat
+      // Continue without voice chat - don't crash the app
+      _localStream = null;
+      _peerConnection = null;
+    }
+  }
+  
+  Future<bool> _checkMicrophonePermission() async {
+    try {
+      // Try to get a temporary stream to check permissions
+      final testStream = await navigator.mediaDevices.getUserMedia({'audio': true});
+      testStream.getTracks().forEach((track) => track.stop());
+      return true;
+    } catch (e) {
+      print('Microphone permission check failed: $e');
+      return false;
     }
   }
   
@@ -280,35 +303,44 @@ class GameRoomService {
   }
   
   Future<void> toggleMute() async {
-    if (_localStream != null) {
-      final audioTrack = _localStream!.getAudioTracks().first;
-      audioTrack.enabled = !audioTrack.enabled;
-      
-      // Update player mute status
-      if (_currentRoom != null) {
-        final currentUser = await _api.getCurrentUser();
-        final playerIndex = _currentRoom!.players.indexWhere((p) => p.id == currentUser.id);
-        if (playerIndex != -1) {
-          _currentRoom!.players[playerIndex].isMuted = !audioTrack.enabled;
+    try {
+      if (_localStream != null && _localStream!.getAudioTracks().isNotEmpty) {
+        final audioTrack = _localStream!.getAudioTracks().first;
+        audioTrack.enabled = !audioTrack.enabled;
+        
+        // Update player mute status
+        if (_currentRoom != null) {
+          try {
+            final currentUser = await _api.getCurrentUser();
+            final playerIndex = _currentRoom!.players.indexWhere((p) => p.id == currentUser.id);
+            if (playerIndex != -1) {
+              _currentRoom!.players[playerIndex].isMuted = !audioTrack.enabled;
+              _roomController?.add(_currentRoom!);
+              
+              // Notify other players about mute status
+              _sendVoiceChatSignal({
+                'type': 'mute-status',
+                'is_muted': !audioTrack.enabled,
+                'player_id': currentUser.id,
+              });
+            }
+          } catch (e) {
+            print('Error updating mute status: $e');
+          }
+        }
+        
+        print('🎤 Voice ${audioTrack.enabled ? "unmuted" : "muted"}');
+      } else {
+        // Mock mute toggle for demo when no voice stream
+        if (_currentRoom != null && _currentRoom!.players.isNotEmpty) {
+          _currentRoom!.players[0].isMuted = !_currentRoom!.players[0].isMuted;
           _roomController?.add(_currentRoom!);
-          
-          // Notify other players about mute status
-          _sendVoiceChatSignal({
-            'type': 'mute-status',
-            'is_muted': !audioTrack.enabled,
-            'player_id': currentUser.id,
-          });
+          print('🎤 Voice ${_currentRoom!.players[0].isMuted ? "muted" : "unmuted"} (mock)');
         }
       }
-      
-      print('🎤 Voice ${audioTrack.enabled ? "unmuted" : "muted"}');
-    } else {
-      // Mock mute toggle for demo when no voice stream
-      if (_currentRoom != null && _currentRoom!.players.isNotEmpty) {
-        _currentRoom!.players[0].isMuted = !_currentRoom!.players[0].isMuted;
-        _roomController?.add(_currentRoom!);
-        print('🎤 Voice ${_currentRoom!.players[0].isMuted ? "muted" : "unmuted"}');
-      }
+    } catch (e) {
+      print('Error in toggleMute: $e');
+      onError?.call('Failed to toggle mute: $e');
     }
   }
   
@@ -437,6 +469,14 @@ class GameRoomService {
     }
   }
   
-  bool get isVoiceChatActive => _localStream != null;
-  bool get isMuted => _localStream?.getAudioTracks().first.enabled == false;
+  bool get isVoiceChatActive => _localStream != null && _localStream!.getAudioTracks().isNotEmpty;
+  bool get isMuted {
+    try {
+      return _localStream?.getAudioTracks().isNotEmpty == true 
+          ? !_localStream!.getAudioTracks().first.enabled 
+          : false;
+    } catch (e) {
+      return false;
+    }
+  }
 }
