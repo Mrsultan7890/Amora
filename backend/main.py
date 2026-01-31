@@ -28,6 +28,24 @@ try:
                 UNIQUE(user_id, photo_id)
             )
         """))
+        
+        # Update existing users with sample interests (column already exists)
+        try:
+            conn.execute(text("""
+                UPDATE users SET interests = 
+                CASE 
+                    WHEN name = 'shadow' THEN '["Gaming", "Technology", "Music"]'
+                    WHEN name = 'Amora' THEN '["Travel", "Photography", "Art"]'
+                    WHEN name = 'arpita' THEN '["Dancing", "Movies", "Fashion"]'
+                    WHEN name = 'waishali' THEN '["Reading", "Cooking", "Nature"]'
+                    ELSE '["Travel", "Music", "Movies"]'
+                END
+                WHERE interests IS NULL OR interests = '[]' OR interests = ''
+            """))
+            print("✅ Updated existing users with realistic interests")
+        except Exception as e:
+            print(f"Error updating interests: {e}")
+        
         conn.commit()
         print("✅ Feed likes table created successfully")
         

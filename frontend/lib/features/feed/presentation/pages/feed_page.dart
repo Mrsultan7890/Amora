@@ -130,6 +130,11 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   Widget _buildFeedItem(Map<String, dynamic> item, int index) {
+    // Check if this is an ad
+    if (item['type'] == 'advertisement') {
+      return _buildAdItem(item, index);
+    }
+    
     final isLiked = item['is_liked'] ?? false;
     final likesCount = item['likes_count'] ?? 0;
     final compatibilityScore = item['compatibility_score'] ?? 0;
@@ -241,5 +246,137 @@ class _FeedPageState extends State<FeedPage> {
         ],
       ),
     ).animate().fadeIn(delay: (100 * index).ms).slideY(begin: 0.3, end: 0);
+  }
+  
+  Widget _buildAdItem(Map<String, dynamic> ad, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AmoraTheme.warmGold.withOpacity(0.1), AmoraTheme.sunsetRose.withOpacity(0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AmoraTheme.warmGold.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        children: [
+          // Ad header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AmoraTheme.warmGold,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Sponsored',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.flash_on,
+                  color: AmoraTheme.warmGold,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+          
+          // Ad content
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: AmoraTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.flash_on,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        ad['ad_title'] ?? 'Boost Your Profile',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        ad['ad_description'] ?? 'Get 10x more visibility',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Ad action button
+                SizedBox(
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AmoraTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextButton(
+                      onPressed: () {
+                        // Handle ad click - navigate to boost page
+                        _handleAdClick(ad);
+                      },
+                      child: Text(
+                        ad['ad_button_text'] ?? 'Get Boost',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: (100 * index).ms).slideY(begin: 0.3, end: 0);
+  }
+  
+  void _handleAdClick(Map<String, dynamic> ad) {
+    final action = ad['ad_action'] ?? '';
+    
+    if (action == 'boost_profile') {
+      // Navigate to discover page to show boost dialog
+      Navigator.pushNamed(context, '/discover');
+    }
   }
 }

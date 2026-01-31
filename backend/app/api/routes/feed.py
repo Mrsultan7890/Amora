@@ -130,7 +130,7 @@ async def get_feed_photos(
                             "user_name": user[1],
                             "user_age": user[2],
                             "photo_url": photo_url,
-                            "location": f"{user[4]},{user[5]}" if user[4] and user[5] else "Unknown",
+                            "location": _format_location(user[4], user[5]) if user[4] and user[5] else "Unknown",
                             "timestamp": user[8].isoformat() if hasattr(user[8], 'isoformat') else str(user[8]),
                             "likes_count": base_likes,
                             "is_liked": photo_id in user_liked_photos,
@@ -144,15 +144,84 @@ async def get_feed_photos(
         # Sort by compatibility score and engagement
         feed_items.sort(key=lambda x: (x['compatibility_score'], x['likes_count']), reverse=True)
         
-        # Limit to 30 items for better performance
-        feed_items = feed_items[:30]
+        # Insert ads every 7-8 posts (Instagram style)
+        final_feed = []
+        ad_counter = 0
         
-        print(f"Feed API: Found {len(feed_items)} feed items with real algorithm")
-        return {"feed_items": feed_items}
+        for i, item in enumerate(feed_items):
+            final_feed.append(item)
+            
+            # Insert ad after every 7-8 posts
+            if (i + 1) % 8 == 0 or (i + 1) % 7 == 0:
+                ad_counter += 1
+                final_feed.append({
+                    "id": f"ad_{ad_counter}",
+                    "type": "advertisement",
+                    "ad_title": "Find Your Perfect Match",
+                    "ad_description": "Boost your profile for 10x more visibility",
+                    "ad_image": "/static/ads/boost_ad.jpg",
+                    "ad_action": "boost_profile",
+                    "ad_button_text": "Get Boost",
+                    "timestamp": datetime.now().isoformat()
+                })
+        
+        # Limit to 30 items total (including ads)
+        final_feed = final_feed[:30]
+        
+        print(f"Feed API: Found {len(final_feed)} feed items with ads (real algorithm)")
+        return {"feed_items": final_feed}
         
     except Exception as e:
         print(f"Error getting feed photos: {e}")
         return {"feed_items": []}
+
+def _format_location(lat, lng):
+    """Convert coordinates to real location using reverse geocoding"""
+    try:
+        if lat and lng:
+            import requests
+            # Use free OpenStreetMap Nominatim API for reverse geocoding
+            url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}&zoom=10&addressdetails=1"
+            
+            headers = {
+                'User-Agent': 'Amora Dating App (contact@amora.app)'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=5)
+            
+            if response.status_code == 200:
+                data = response.json()
+                address = data.get('address', {})
+                
+                # Extract city/town/village
+                city = (address.get('city') or 
+                       address.get('town') or 
+                       address.get('village') or 
+                       address.get('suburb'))
+                
+                state = address.get('state')
+                country = address.get('country')
+                
+                if city and country:
+                    if state and country == 'India':
+                        return f"{city}, {state}"
+                    else:
+                        return f"{city}, {country}"
+                elif state and country:
+                    return f"{state}, {country}"
+                elif country:
+                    return country
+            
+            # Fallback to coordinates if API fails
+            return f"{lat:.1f}°N, {lng:.1f}°E"
+        
+        return "Unknown"
+    except Exception as e:
+        print(f"Geocoding error: {e}")
+        # Fallback to coordinates
+        if lat and lng:
+            return f"{lat:.1f}°N, {lng:.1f}°E"
+        return "Unknown"
 
 class LikeRequest(BaseModel):
     is_like: bool

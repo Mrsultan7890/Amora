@@ -8,6 +8,7 @@ import '../../../../core/services/offline_emergency_service.dart';
 import '../../../calling/presentation/pages/call_history_page.dart';
 import '../../../games/presentation/pages/game_lobby_page.dart';
 import 'emergency_contacts_page.dart';
+import 'smartwatch_settings_page.dart';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
 import 'help_support_page.dart';
@@ -333,6 +334,20 @@ class _SettingsPageState extends State<SettingsPage> {
                           'Manage offline emergency contacts',
                           Icons.contact_emergency,
                           () => _showEmergencyContactsPage(),
+                        ),
+                        
+                        const Divider(height: 1),
+                        
+                        _buildActionSetting(
+                          'Smartwatch Settings',
+                          'Connect watch for emergency features',
+                          Icons.watch,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SmartwatchSettingsPage(),
+                            ),
+                          ),
                         ),
                         
                         const Divider(height: 1),

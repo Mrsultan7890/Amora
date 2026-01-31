@@ -21,6 +21,7 @@ class User(Base):
     latitude = Column(Float)
     longitude = Column(Float)
     photos = Column(Text, default="[]")
+    interests = Column(Text, default="[]")
     is_verified = Column(Boolean, default=False)
     is_online = Column(Boolean, default=False)
     last_seen = Column(DateTime, default=func.now())
