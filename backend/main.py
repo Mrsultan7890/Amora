@@ -13,7 +13,24 @@ from app.services.websocket_manager import ConnectionManager
 
 # Create tables
 try:
+    from sqlalchemy import text
     Base.metadata.create_all(bind=engine)
+    
+    # Create feed_likes table for real like system
+    with engine.connect() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS feed_likes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                photo_id TEXT NOT NULL,
+                photo_owner_id TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(user_id, photo_id)
+            )
+        """))
+        conn.commit()
+        print("✅ Feed likes table created successfully")
+        
 except Exception as e:
     print(f"Database tables already exist or error: {e}")
 
