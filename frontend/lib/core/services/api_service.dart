@@ -453,9 +453,10 @@ class ApiService {
     }
   }
   
-  Future<void> likeFeedPhoto(String photoId, bool isLike) async {
+  Future<Map<String, dynamic>> likeFeedPhoto(String photoId, bool isLike) async {
     try {
-      await _dio.post('/feed/photos/$photoId/like', data: {'is_like': isLike});
+      final response = await _dio.post('/feed/photos/$photoId/like', data: {'is_like': isLike});
+      return response.data;
     } catch (e) {
       throw _handleError(e);
     }
