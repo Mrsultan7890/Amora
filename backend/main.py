@@ -50,20 +50,28 @@ try:
         
         # Add incognito mode and show_me_on_amora columns if they don't exist
         try:
-            conn.execute(text("""
-                ALTER TABLE users ADD COLUMN incognito_mode BOOLEAN DEFAULT FALSE
-            """))
-            print("✅ Added incognito_mode column")
-        except Exception as e:
-            print(f"incognito_mode column already exists: {e}")
+            # Check if columns exist first
+            result = conn.execute(text("PRAGMA table_info(users)"))
+            columns = [row[1] for row in result.fetchall()]
             
-        try:
-            conn.execute(text("""
-                ALTER TABLE users ADD COLUMN show_me_on_amora BOOLEAN DEFAULT TRUE
-            """))
-            print("✅ Added show_me_on_amora column")
+            if 'incognito_mode' not in columns:
+                conn.execute(text("""
+                    ALTER TABLE users ADD COLUMN incognito_mode BOOLEAN DEFAULT FALSE
+                """))
+                print("✅ Added incognito_mode column")
+            else:
+                print("ℹ️ incognito_mode column already exists")
+                
+            if 'show_me_on_amora' not in columns:
+                conn.execute(text("""
+                    ALTER TABLE users ADD COLUMN show_me_on_amora BOOLEAN DEFAULT TRUE
+                """))
+                print("✅ Added show_me_on_amora column")
+            else:
+                print("ℹ️ show_me_on_amora column already exists")
+                
         except Exception as e:
-            print(f"show_me_on_amora column already exists: {e}")
+            print(f"Error checking/adding columns: {e}")
         
         conn.commit()
         print("✅ Feed likes table created successfully")

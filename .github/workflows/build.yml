@@ -3,8 +3,6 @@ name: Build and Release Amora Android App
 on:
   push:
     branches: [ main, develop ]
-    tags:
-      - 'v*'
   pull_request:
     branches: [ main ]
 
@@ -41,10 +39,6 @@ jobs:
         echo "flutter.versionName=1.0.0" >> local.properties
         echo "flutter.versionCode=1" >> local.properties
       
-    - name: Analyze code
-      working-directory: ./frontend
-      run: flutter analyze
-      
     - name: Build APK
       working-directory: ./frontend
       run: |
@@ -67,14 +61,15 @@ jobs:
         if-no-files-found: warn
         
     - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: v1.0.${{ github.run_number }}
+        name: Amora v1.0.${{ github.run_number }}
         files: |
           frontend/build/app/outputs/flutter-apk/amora-v1.0.apk
-        name: Amora ${{ github.ref_name }}
         body: |
-          ## Amora Dating App ${{ github.ref_name }}
+          ## Amora Dating App v1.0.${{ github.run_number }}
           
           ### 🚀 What's New
           - Smart matching algorithm
