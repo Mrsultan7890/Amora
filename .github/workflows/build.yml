@@ -72,9 +72,9 @@ jobs:
       with:
         files: |
           frontend/build/app/outputs/flutter-apk/amora-v1.0.apk
-        name: Amora v${{ github.ref_name }}
+        name: Amora ${{ github.ref_name }}
         body: |
-          ## Amora Dating App v${{ github.ref_name }}
+          ## Amora Dating App ${{ github.ref_name }}
           
           ### 🚀 What's New
           - Smart matching algorithm
