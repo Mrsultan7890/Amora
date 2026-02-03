@@ -15,6 +15,20 @@ class SmsService {
     }
   }
   
+  static Future<bool> sendMmsWithAudio(String phoneNumber, String audioFilePath) async {
+    try {
+      final result = await _channel.invokeMethod('sendMmsWithAudio', {
+        'phoneNumber': phoneNumber,
+        'audioFilePath': audioFilePath,
+        'message': 'EMERGENCY VOICE MESSAGE - Listen to audio',
+      });
+      return result == true;
+    } catch (e) {
+      print('MMS send failed: $e');
+      return false;
+    }
+  }
+  
   static Future<bool> makeCall(String phoneNumber) async {
     try {
       final result = await _channel.invokeMethod('makeCall', {

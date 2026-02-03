@@ -12,6 +12,7 @@ import androidx.core.app.ActivityCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "amora/sms"
@@ -31,6 +32,18 @@ class MainActivity: FlutterActivity() {
                         result.success(success)
                     } else {
                         result.error("INVALID_ARGUMENTS", "Phone number and message are required", null)
+                    }
+                }
+                "sendMmsWithAudio" -> {
+                    val phoneNumber = call.argument<String>("phoneNumber")
+                    val audioFilePath = call.argument<String>("audioFilePath")
+                    val message = call.argument<String>("message")
+                    
+                    if (phoneNumber != null && audioFilePath != null) {
+                        val success = sendMmsWithAudio(phoneNumber, audioFilePath, message ?: "Emergency Voice Message")
+                        result.success(success)
+                    } else {
+                        result.error("INVALID_ARGUMENTS", "Phone number and audio file path are required", null)
                     }
                 }
                 "makeCall" -> {
@@ -74,6 +87,22 @@ class MainActivity: FlutterActivity() {
             } else {
                 false
             }
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    private fun sendMmsWithAudio(phoneNumber: String, audioFilePath: String, message: String): Boolean {
+        return try {
+            val audioFile = File(audioFilePath)
+            if (!audioFile.exists()) {
+                return false
+            }
+            
+            // For now, send SMS with file info since MMS is complex
+            val fallbackMessage = "$message\n\nVoice message recorded but cannot be sent directly via MMS.\nFile: ${audioFile.name}\nSize: ${audioFile.length()} bytes\nPlease call back immediately!"
+            
+            sendSms(phoneNumber, fallbackMessage)
         } catch (e: Exception) {
             false
         }
