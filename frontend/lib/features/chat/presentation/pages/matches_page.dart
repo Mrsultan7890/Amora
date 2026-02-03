@@ -377,10 +377,7 @@ class _MatchesPageState extends State<MatchesPage> {
   
   Future<void> _initiateCall(MatchModel match) async {
     try {
-      // Start the call service first
-      await _callService.startCall(match.otherUser!.id, CallType.video);
-      
-      // Then navigate to video call screen
+      // First navigate to video call screen
       if (mounted) {
         Navigator.push(
           context,
@@ -392,6 +389,9 @@ class _MatchesPageState extends State<MatchesPage> {
           ),
         );
       }
+      
+      // Then start the call service (this will handle permissions)
+      await _callService.startCall(match.otherUser!.id, CallType.video);
       
     } catch (e) {
       if (mounted) {

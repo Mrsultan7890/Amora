@@ -1,4 +1,5 @@
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'webrtc_service.dart';
 import 'api_service.dart';
 import 'websocket_service.dart';
@@ -85,6 +86,15 @@ class CallService {
   
   Future<void> startCall(String userId, CallType callType) async {
     try {
+      // Check permissions first
+      final cameraPermission = await Permission.camera.request();
+      final micPermission = await Permission.microphone.request();
+      
+      if (cameraPermission != PermissionStatus.granted || micPermission != PermissionStatus.granted) {
+        onError?.call('Camera and microphone permissions are required for video calls');
+        return;
+      }
+      
       // Check if calling self
       final currentUser = await _api.getCurrentUser();
       if (currentUser.id == userId) {
@@ -137,6 +147,15 @@ class CallService {
   
   Future<void> answerCall(Map<String, dynamic> callData) async {
     try {
+      // Check permissions first
+      final cameraPermission = await Permission.camera.request();
+      final micPermission = await Permission.microphone.request();
+      
+      if (cameraPermission != PermissionStatus.granted || micPermission != PermissionStatus.granted) {
+        onError?.call('Camera and microphone permissions are required for video calls');
+        return;
+      }
+      
       print('📱 Answering call');
       
       _currentCallId = callData['callId'];

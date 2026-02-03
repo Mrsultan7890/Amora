@@ -145,7 +145,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Mark all as read when leaving page
+        await _notificationService.markAllAsRead();
+        Navigator.pop(context, true);
+        return false;
+      },
+      child: Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: AmoraTheme.backgroundGradient,
@@ -158,7 +165,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () async {
+                        await _notificationService.markAllAsRead();
+                        Navigator.pop(context, true);
+                      },
                       icon: const Icon(
                         Icons.arrow_back,
                         color: AmoraTheme.deepMidnight,
@@ -232,6 +242,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
         ),
       ),
+    ),
     );
   }
 

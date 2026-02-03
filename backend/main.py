@@ -1,10 +1,12 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
 import redis.asyncio as redis
 from contextlib import asynccontextmanager
 import json
 from typing import Dict, List
+from datetime import datetime
 
 from app.core.config import settings
 from app.core.database import engine, Base
@@ -45,6 +47,23 @@ try:
             print("✅ Updated existing users with realistic interests")
         except Exception as e:
             print(f"Error updating interests: {e}")
+        
+        # Add incognito mode and show_me_on_amora columns if they don't exist
+        try:
+            conn.execute(text("""
+                ALTER TABLE users ADD COLUMN incognito_mode BOOLEAN DEFAULT FALSE
+            """))
+            print("✅ Added incognito_mode column")
+        except Exception as e:
+            print(f"incognito_mode column already exists: {e}")
+            
+        try:
+            conn.execute(text("""
+                ALTER TABLE users ADD COLUMN show_me_on_amora BOOLEAN DEFAULT TRUE
+            """))
+            print("✅ Added show_me_on_amora column")
+        except Exception as e:
+            print(f"show_me_on_amora column already exists: {e}")
         
         conn.commit()
         print("✅ Feed likes table created successfully")
@@ -100,7 +119,98 @@ app.include_router(boost.router, prefix="/api/boost", tags=["Boost"])
 
 @app.get("/")
 async def root():
-    return {"message": "Amora Dating API", "version": "1.0.0"}
+    return FileResponse("static/index.html")
+
+@app.get("/privacy")
+async def privacy_policy():
+    return FileResponse("static/privacy.html")
+
+@app.get("/terms")
+async def terms_of_service():
+    return FileResponse("static/terms.html")
+
+@app.get("/api/download/apk")
+async def download_apk():
+    # GitHub release link - update this with your actual release URL
+    github_release_url = "https://github.com/yourusername/amora/releases/download/v1.0/amora.apk"
+    
+    # Track download
+    try:
+        # Log download attempt
+        print(f"APK download requested at {datetime.now()}")
+    except:
+        pass
+    
+    # For now, return info page since APK not ready
+    return HTMLResponse("""
+    <html>
+        <head>
+            <title>Download Amora APK</title>
+            <style>
+                body { 
+                    font-family: 'Poppins', sans-serif; 
+                    background: linear-gradient(135deg, #E91E63 0%, #9C27B0 100%);
+                    color: white;
+                    text-align: center;
+                    padding: 2rem;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background: rgba(255,255,255,0.1);
+                    padding: 2rem;
+                    border-radius: 20px;
+                    backdrop-filter: blur(10px);
+                }
+                .btn {
+                    background: linear-gradient(45deg, #E91E63, #9C27B0);
+                    color: white;
+                    padding: 15px 30px;
+                    border: none;
+                    border-radius: 25px;
+                    text-decoration: none;
+                    display: inline-block;
+                    margin: 1rem;
+                    font-weight: bold;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>📱 Amora APK Download</h1>
+                <p>The APK will be available soon!</p>
+                <p>We're preparing the final build for you.</p>
+                
+                <h3>📋 Installation Instructions:</h3>
+                <ol style="text-align: left; max-width: 400px; margin: 0 auto;">
+                    <li>Enable "Unknown Sources" in Android Settings</li>
+                    <li>Download the APK file</li>
+                    <li>Tap the downloaded file to install</li>
+                    <li>Open Amora and create your account</li>
+                </ol>
+                
+                <a href="/" class="btn">← Back to Home</a>
+                <a href="#" class="btn" onclick="alert('APK will be available soon!')">📥 Download APK</a>
+            </div>
+        </body>
+    </html>
+    """)
+
+@app.post("/api/analytics/download")
+async def track_download():
+    # Track download analytics
+    print(f"Download tracked at {datetime.now()}")
+    return {"status": "tracked"}
+
+@app.get("/api/release/latest")
+async def get_latest_release():
+    """Get latest release info from GitHub"""
+    return {
+        "version": "1.0.0",
+        "download_url": "https://github.com/yourusername/amora/releases/download/v1.0/amora-v1.0.apk",
+        "size": "25 MB",
+        "release_notes": "Initial release with all core features"
+    }
 
 @app.get("/health")
 async def health_check():

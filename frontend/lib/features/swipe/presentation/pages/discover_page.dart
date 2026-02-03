@@ -580,12 +580,8 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
                           ),
                         );
                         
-                        // Refresh notification count when returning
-                        if (result == true) {
-                          setState(() {
-                            _notificationCount = _notificationService.unreadCount;
-                          });
-                        }
+                        // Always refresh notification count when returning
+                        await _loadNotifications();
                       },
                       child: Container(
                         padding: const EdgeInsets.all(12),

@@ -39,6 +39,9 @@ class _VideoCallPageState extends State<VideoCallPage> {
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
     
+    // Initialize call service if not already done
+    await _callService.initialize();
+    
     _callService.onStateChanged = (state) {
       if (mounted) {
         setState(() {});
@@ -55,7 +58,21 @@ class _VideoCallPageState extends State<VideoCallPage> {
       }
     };
     
-    // Set local stream
+    _callService.onError = (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: Colors.red,
+          ),
+        );
+        if (error.contains('permission')) {
+          Navigator.of(context).pop();
+        }
+      }
+    };
+    
+    // Set local stream when available
     if (_callService.localStream != null) {
       _localRenderer.srcObject = _callService.localStream;
     }

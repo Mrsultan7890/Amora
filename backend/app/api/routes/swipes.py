@@ -88,8 +88,41 @@ async def discover_users(
     # Base query - exclude current user and swiped users
     users_query = db.query(User).filter(
         User.id != current_user.id,
-        User.is_active == True
+        User.is_active == True,
+        User.show_me_on_amora == True  # Only show users who want to be discovered
     )
+    
+    # Apply incognito mode logic
+    if current_user.incognito_mode:
+        # In incognito mode, only show users that current user has liked
+        liked_user_ids = [row[0] for row in db.query(Swipe.swiped_id).filter(
+            Swipe.swiper_id == current_user.id,
+            Swipe.is_like == True
+        ).all()]
+        
+        if liked_user_ids:
+            users_query = users_query.filter(User.id.in_(liked_user_ids))
+        else:
+            # No liked users, return empty
+            return []
+    else:
+        # Normal mode - exclude users in incognito mode unless they liked current user
+        incognito_user_ids = [row[0] for row in db.query(User.id).filter(
+            User.incognito_mode == True
+        ).all()]
+        
+        if incognito_user_ids:
+            # Get incognito users who liked current user
+            liked_by_incognito = [row[0] for row in db.query(Swipe.swiper_id).filter(
+                Swipe.swiped_id == current_user.id,
+                Swipe.is_like == True,
+                Swipe.swiper_id.in_(incognito_user_ids)
+            ).all()]
+            
+            # Exclude incognito users except those who liked current user
+            exclude_incognito = [uid for uid in incognito_user_ids if uid not in liked_by_incognito]
+            if exclude_incognito:
+                users_query = users_query.filter(~User.id.in_(exclude_incognito))
     
     if swiped_user_ids:
         users_query = users_query.filter(~User.id.in_(swiped_user_ids))

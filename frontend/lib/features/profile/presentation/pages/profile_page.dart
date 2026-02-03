@@ -9,6 +9,8 @@ import '../../../../shared/models/user_model.dart';
 import '../../../../shared/models/match_model.dart';
 import '../../../../shared/widgets/photo_gallery_viewer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../chat/presentation/pages/chat_screen.dart';
+import '../../../profile/presentation/pages/profile_view_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -546,13 +548,65 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               itemCount: _matches.length,
               itemBuilder: (context, index) {
                 final match = _matches[index];
-                return ListTile(
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.person),
+                return GestureDetector(
+                  onTap: () {
+                    // Navigate to chat screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(match: match),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: match.otherUser?.photos.isNotEmpty == true
+                            ? NetworkImage(match.otherUser!.photos.first)
+                            : null,
+                        child: match.otherUser?.photos.isEmpty != false
+                            ? const Icon(Icons.person)
+                            : null,
+                      ),
+                      title: Text(
+                        match.otherUser?.name ?? 'Unknown',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AmoraTheme.deepMidnight,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Matched ${_formatDate(match.createdAt)}',
+                        style: TextStyle(
+                          color: AmoraTheme.deepMidnight.withOpacity(0.7),
+                        ),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AmoraTheme.sunsetRose.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.chat,
+                          color: AmoraTheme.sunsetRose,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ),
-                  title: Text(match.otherUser?.name ?? 'Unknown'),
-                  subtitle: Text('Matched ${_formatDate(match.createdAt)}'),
-                  trailing: const Icon(Icons.chat),
                 );
               },
             ),
@@ -579,27 +633,82 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               itemBuilder: (context, index) {
                 final like = _likes[index];
                 final user = UserModel.fromJson(like['user']);
-                return ListTile(
-                  leading: Stack(
-                    children: [
-                      const CircleAvatar(
-                        child: Icon(Icons.person),
-                      ),
-                      if (like['is_super_like'] == true)
-                        const Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Icon(
-                            Icons.star,
-                            color: Colors.amber,
-                            size: 16,
-                          ),
+                return GestureDetector(
+                  onTap: () {
+                    // Navigate to profile view
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfileViewScreen(
+                          userId: user.id,
+                          userName: user.name,
                         ),
-                    ],
+                      ),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      leading: Stack(
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: user.photos.isNotEmpty
+                                ? NetworkImage(user.photos.first)
+                                : null,
+                            child: user.photos.isEmpty
+                                ? const Icon(Icons.person)
+                                : null,
+                          ),
+                          if (like['is_super_like'] == true)
+                            const Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 16,
+                              ),
+                            ),
+                        ],
+                      ),
+                      title: Text(
+                        user.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AmoraTheme.deepMidnight,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Liked you ${_formatDate(DateTime.parse(like['created_at']))}',
+                        style: TextStyle(
+                          color: AmoraTheme.deepMidnight.withOpacity(0.7),
+                        ),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.favorite,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ),
-                  title: Text(user.name),
-                  subtitle: Text('Liked you ${_formatDate(DateTime.parse(like['created_at']))}'),
-                  trailing: const Icon(Icons.favorite, color: Colors.red),
                 );
               },
             ),

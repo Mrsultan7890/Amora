@@ -34,5 +34,7 @@ class User(Base):
     verification_type = Column(String(20), default="basic")  # basic, donor
     profile_completion = Column(Integer, default=0)  # percentage
     show_in_feed = Column(Boolean, default=True)  # Show photos in feed
+    incognito_mode = Column(Boolean, default=False)  # Only show to liked users
+    show_me_on_amora = Column(Boolean, default=True)  # Discoverable in swipe
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
