@@ -9,6 +9,10 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      actions: write
     
     steps:
     - name: Checkout code
@@ -62,7 +66,7 @@ jobs:
         
     - name: Create Release
       if: github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v1.0.${{ github.run_number }}
         name: Amora v1.0.${{ github.run_number }}
@@ -90,5 +94,6 @@ jobs:
           - **Architecture**: Universal APK
         draft: false
         prerelease: false
+        make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
