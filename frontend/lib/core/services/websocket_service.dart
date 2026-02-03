@@ -13,9 +13,7 @@ class WebSocketService {
   
   // Callbacks
   Function(Map<String, dynamic>)? onSignalingMessage;
-  Function(Map<String, dynamic>)? onGameUpdate;
   Function(Map<String, dynamic>)? onNewMessage;
-  Function(Map<String, dynamic>)? onVoiceChatSignal;
   
   String get wsUrl => AppConstants.wsBaseUrl;
   
@@ -60,14 +58,8 @@ class WebSocketService {
       case 'signaling':
         onSignalingMessage?.call(message['data']);
         break;
-      case 'game_update':
-        onGameUpdate?.call(message['data']);
-        break;
       case 'new_message':
         onNewMessage?.call(message);
-        break;
-      case 'voice_chat_signal':
-        onVoiceChatSignal?.call(message['data']);
         break;
       default:
         print('Unknown message type: ${message['type']}');
