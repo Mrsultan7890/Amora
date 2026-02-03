@@ -154,42 +154,61 @@ class OfflineEmergencyService {
     // Check if voice message exists
     final voiceService = EmergencyVoiceService.instance;
     String voiceInfo = '';
+    
     if (voiceService.hasRecording) {
       final duration = await voiceService.getRecordingDuration();
-      voiceInfo = '\n🎤 Voice message recorded (${duration}s) - Check app for audio';
+      voiceInfo = '\n🎤 Voice message: ${duration}s - Will call you to play it';
     }
     
     final message = 'EMERGENCY ALERT\nI need immediate help!$locationText$voiceInfo\nTime: ${DateTime.now().toString().substring(0, 19)}\n- Amora Emergency';
     
-    // Send automatic SMS to all contacts
+    // Send SMS to all contacts
     for (final contact in enabledContacts) {
       try {
         await SmsService.sendSms(contact.phoneNumber, message);
+        print('✅ SMS sent to ${contact.name}');
         await Future.delayed(const Duration(milliseconds: 500));
       } catch (e) {
-        // Continue with next contact
+        print('❌ Failed to send SMS to ${contact.name}: $e');
       }
     }
   }
   
   Future<void> _startEmergencyCallSequence() async {
     final enabledContacts = _contacts.where((c) => c.isEnabled).toList();
+    final voiceService = EmergencyVoiceService.instance;
     
     if (enabledContacts.isEmpty) return;
     
-    // Make automatic calls to all contacts with proper delay
+    // Make automatic calls to all contacts
     for (int i = 0; i < enabledContacts.length; i++) {
       final contact = enabledContacts[i];
       try {
+        print('📞 Calling ${contact.name}...');
         bool callMade = await SmsService.makeCall(contact.phoneNumber);
+        
         if (callMade) {
-          // Wait 10 seconds between calls to allow user to answer/decline
+          print('✅ Call initiated to ${contact.name}');
+          
+          // If voice message exists, play it during call
+          if (voiceService.hasRecording) {
+            // Wait 3 seconds for call to connect, then play voice message
+            await Future.delayed(const Duration(seconds: 3));
+            try {
+              await voiceService.playRecording();
+              print('🎤 Playing voice message during call to ${contact.name}');
+            } catch (e) {
+              print('❌ Failed to play voice during call: $e');
+            }
+          }
+          
+          // Wait 15 seconds before next call
           if (i < enabledContacts.length - 1) {
-            await Future.delayed(const Duration(seconds: 10));
+            await Future.delayed(const Duration(seconds: 15));
           }
         }
       } catch (e) {
-        // Continue with next contact
+        print('❌ Call failed to ${contact.name}: $e');
       }
     }
   }

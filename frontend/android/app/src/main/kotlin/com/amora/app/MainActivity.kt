@@ -8,6 +8,7 @@ import android.telephony.SmsManager
 import android.provider.Settings
 import android.os.PowerManager
 import android.content.Context
+import android.os.Build
 import androidx.core.app.ActivityCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -17,9 +18,13 @@ import java.io.File
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "amora/sms"
     private val REQUEST_CODE_PERMISSIONS = 1001
+    private lateinit var bluetoothEmergencyManager: BluetoothEmergencyManager
     
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        
+        // Initialize Bluetooth emergency manager
+        bluetoothEmergencyManager = BluetoothEmergencyManager(this)
         
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
@@ -64,6 +69,35 @@ class MainActivity: FlutterActivity() {
                     val hasPermissions = checkAllPermissions()
                     result.success(hasPermissions)
                 }
+                "startBackgroundService" -> {
+                    startEmergencyBackgroundService()
+                    result.success(true)
+                }
+                "stopBackgroundService" -> {
+                    stopEmergencyBackgroundService()
+                    result.success(true)
+                }
+                "isBluetoothEnabled" -> {
+                    val enabled = bluetoothEmergencyManager.isBluetoothEnabled()
+                    result.success(enabled)
+                }
+                "enableBluetooth" -> {
+                    val enabled = bluetoothEmergencyManager.enableBluetooth()
+                    result.success(enabled)
+                }
+                "broadcastEmergency" -> {
+                    val emergencyData = call.arguments as Map<String, Any>
+                    bluetoothEmergencyManager.broadcastEmergency(emergencyData)
+                    result.success(true)
+                }
+                "startEmergencyListener" -> {
+                    bluetoothEmergencyManager.startEmergencyListener()
+                    result.success(true)
+                }
+                "stopEmergencyListener" -> {
+                    bluetoothEmergencyManager.stopEmergencyListener()
+                    result.success(true)
+                }
                 else -> {
                     result.notImplemented()
                 }
@@ -96,14 +130,35 @@ class MainActivity: FlutterActivity() {
         return try {
             val audioFile = File(audioFilePath)
             if (!audioFile.exists()) {
+                println("Audio file not found: $audioFilePath")
                 return false
             }
             
-            // For now, send SMS with file info since MMS is complex
-            val fallbackMessage = "$message\n\nVoice message recorded but cannot be sent directly via MMS.\nFile: ${audioFile.name}\nSize: ${audioFile.length()} bytes\nPlease call back immediately!"
+            println("Attempting to send voice message: ${audioFile.name} (${audioFile.length()} bytes)")
             
-            sendSms(phoneNumber, fallbackMessage)
+            // For Android, MMS is complex and requires carrier support
+            // Most reliable approach is to send detailed SMS with file info
+            val detailedMessage = """$message
+            
+🎤 EMERGENCY VOICE MESSAGE RECORDED
+            
+File: ${audioFile.name}
+Duration: ${audioFile.length() / 1024}s (approx)
+Size: ${audioFile.length()} bytes
+            
+⚠️ I cannot send the audio file directly via SMS.
+            
+PLEASE CALL ME BACK IMMEDIATELY!
+            
+This is a real emergency situation.
+            
+Time: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date())}
+            """.trimIndent()
+            
+            // Send enhanced SMS with voice message details
+            sendSms(phoneNumber, detailedMessage)
         } catch (e: Exception) {
+            println("MMS send error: ${e.message}")
             false
         }
     }
@@ -152,5 +207,21 @@ class MainActivity: FlutterActivity() {
         val overlayPermission = Settings.canDrawOverlays(this)
         
         return smsPermission && callPermission && batteryOptimization && overlayPermission
+    }
+    
+    private fun startEmergencyBackgroundService() {
+        val serviceIntent = Intent(this, EmergencyBackgroundService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+        println("🚨 Emergency background service started")
+    }
+    
+    private fun stopEmergencyBackgroundService() {
+        val serviceIntent = Intent(this, EmergencyBackgroundService::class.java)
+        stopService(serviceIntent)
+        println("🚨 Emergency background service stopped")
     }
 }

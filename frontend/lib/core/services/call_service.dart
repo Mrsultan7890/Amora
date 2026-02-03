@@ -86,23 +86,43 @@ class CallService {
   
   Future<void> startCall(String userId, CallType callType) async {
     try {
-      // Check permissions first
-      final cameraPermission = await Permission.camera.request();
-      final micPermission = await Permission.microphone.request();
+      print('📞 Starting call to $userId');
       
-      if (cameraPermission != PermissionStatus.granted || micPermission != PermissionStatus.granted) {
-        onError?.call('Camera and microphone permissions are required for video calls');
-        return;
+      // Check permissions first with proper error handling
+      final cameraStatus = await Permission.camera.status;
+      final micStatus = await Permission.microphone.status;
+      
+      print('🎥 Camera permission: $cameraStatus');
+      print('🎤 Microphone permission: $micStatus');
+      
+      // Request permissions if not granted
+      if (cameraStatus != PermissionStatus.granted) {
+        final cameraResult = await Permission.camera.request();
+        if (cameraResult != PermissionStatus.granted) {
+          onError?.call('Camera permission denied. Please enable in settings.');
+          return;
+        }
+      }
+      
+      if (micStatus != PermissionStatus.granted) {
+        final micResult = await Permission.microphone.request();
+        if (micResult != PermissionStatus.granted) {
+          onError?.call('Microphone permission denied. Please enable in settings.');
+          return;
+        }
       }
       
       // Check if calling self
-      final currentUser = await _api.getCurrentUser();
-      if (currentUser.id == userId) {
-        onError?.call('Cannot call yourself! Need 2 different devices for video calls.');
-        return;
+      try {
+        final currentUser = await _api.getCurrentUser();
+        if (currentUser.id == userId) {
+          onError?.call('Cannot call yourself! Need 2 different devices for video calls.');
+          return;
+        }
+      } catch (e) {
+        print('⚠️ Could not verify current user: $e');
+        // Continue anyway
       }
-      
-      print('📞 Starting call to $userId');
       
       _otherUserId = userId;
       _type = callType;
@@ -110,18 +130,27 @@ class CallService {
       
       _setState(CallState.calling);
       
-      // Start local stream
+      // Initialize WebRTC if not already done
+      if (_webrtc.peerConnection == null) {
+        await _webrtc.initialize();
+      }
+      
+      // Start local stream with error handling
       final stream = await _webrtc.startLocalStream(
         video: callType == CallType.video,
         audio: true,
       );
       
       if (stream == null) {
-        throw Exception('Failed to start camera/microphone');
+        throw Exception('Failed to access camera/microphone. Please check permissions.');
       }
       
-      // Create offer
-      final offer = await _webrtc.createOffer();
+      // Create offer with timeout
+      final offer = await _webrtc.createOffer().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Call setup timeout'),
+      );
+      
       if (offer == null) {
         throw Exception('Failed to create call offer');
       }
@@ -137,39 +166,66 @@ class CallService {
         }
       });
       
-      print('✅ Call started');
+      print('✅ Call started successfully');
     } catch (e) {
       print('❌ Error starting call: $e');
       _setState(CallState.failed);
-      onError?.call('Call failed: $e');
+      onError?.call('Call failed: ${e.toString()}');
+      
+      // Clean up on error
+      await _cleanupOnError();
     }
   }
   
   Future<void> answerCall(Map<String, dynamic> callData) async {
     try {
-      // Check permissions first
-      final cameraPermission = await Permission.camera.request();
-      final micPermission = await Permission.microphone.request();
+      print('📱 Answering call');
       
-      if (cameraPermission != PermissionStatus.granted || micPermission != PermissionStatus.granted) {
-        onError?.call('Camera and microphone permissions are required for video calls');
-        return;
+      // Check permissions with proper error handling
+      final cameraStatus = await Permission.camera.status;
+      final micStatus = await Permission.microphone.status;
+      
+      // Request permissions if not granted
+      if (cameraStatus != PermissionStatus.granted) {
+        final cameraResult = await Permission.camera.request();
+        if (cameraResult != PermissionStatus.granted) {
+          onError?.call('Camera permission denied. Cannot answer video call.');
+          return;
+        }
       }
       
-      print('📱 Answering call');
+      if (micStatus != PermissionStatus.granted) {
+        final micResult = await Permission.microphone.request();
+        if (micResult != PermissionStatus.granted) {
+          onError?.call('Microphone permission denied. Cannot answer call.');
+          return;
+        }
+      }
       
       _currentCallId = callData['callId'];
       _type = callData['callType'] == 'video' ? CallType.video : CallType.audio;
       _setState(CallState.ringing);
       
-      // Start local stream
+      // Initialize WebRTC if not already done
+      if (_webrtc.peerConnection == null) {
+        await _webrtc.initialize();
+      }
+      
+      // Start local stream with error handling
       final stream = await _webrtc.startLocalStream(
         video: _type == CallType.video,
         audio: true,
       );
       
       if (stream == null) {
-        throw Exception('Failed to start camera/microphone');
+        throw Exception('Failed to access camera/microphone');
+      }
+      
+      // Validate offer data
+      if (callData['offer'] == null || 
+          callData['offer']['sdp'] == null || 
+          callData['offer']['type'] == null) {
+        throw Exception('Invalid call offer data');
       }
       
       // Set remote offer
@@ -179,8 +235,12 @@ class CallService {
       );
       await _webrtc.setRemoteDescription(offer);
       
-      // Create answer
-      final answer = await _webrtc.createAnswer();
+      // Create answer with timeout
+      final answer = await _webrtc.createAnswer().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Answer creation timeout'),
+      );
+      
       if (answer == null) {
         throw Exception('Failed to create answer');
       }
@@ -195,11 +255,14 @@ class CallService {
         }
       });
       
-      print('✅ Call answered');
+      print('✅ Call answered successfully');
     } catch (e) {
       print('❌ Error answering call: $e');
       _setState(CallState.failed);
-      onError?.call(e.toString());
+      onError?.call('Failed to answer call: ${e.toString()}');
+      
+      // Clean up on error
+      await _cleanupOnError();
     }
   }
   
@@ -316,6 +379,17 @@ class CallService {
   void _setState(CallState newState) {
     _state = newState;
     onStateChanged?.call(newState);
+  }
+  
+  Future<void> _cleanupOnError() async {
+    try {
+      await _webrtc.hangUp();
+      _currentCallId = null;
+      _otherUserId = null;
+      _callStartTime = null;
+    } catch (e) {
+      print('Error during cleanup: $e');
+    }
   }
   
   // Getters for WebRTC

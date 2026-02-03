@@ -28,6 +28,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _showOnlineStatus = true;
   bool _showDistance = true;
   bool _emergencyShakeEnabled = true;
+  bool _bluetoothSOSEnabled = false;
   double _maxDistance = 50.0;
   RangeValues _ageRange = const RangeValues(18, 35);
   String _interestedIn = 'Everyone';
@@ -59,6 +60,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _showOnlineStatus = settings['show_online_status'];
           _showDistance = settings['show_distance'];
           _emergencyShakeEnabled = settings['emergency_shake_enabled'] ?? true;
+          _bluetoothSOSEnabled = settings['bluetooth_sos_enabled'] ?? false;
           _showMeOnAmora = settings['show_me_on_amora'];
           _incognitoMode = settings['incognito_mode'];
           _showInFeed = settings['show_in_feed'] ?? true;
@@ -249,6 +251,33 @@ class _SettingsPageState extends State<SettingsPage> {
                                       : '❌ Emergency shake detection DISABLED'
                                   ),
                                   backgroundColor: value ? Colors.green : Colors.red,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                        
+                        const Divider(height: 1),
+                        
+                        _buildSwitchSetting(
+                          'Bluetooth Emergency SOS',
+                          'Broadcast SOS to nearby phones via Bluetooth (no internet needed)',
+                          _bluetoothSOSEnabled,
+                          (value) async {
+                            setState(() => _bluetoothSOSEnabled = value);
+                            await _settingsService.setBluetoothSOSEnabled(value);
+                            
+                            // Show feedback
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    value 
+                                      ? '📡 Bluetooth SOS ENABLED - Will broadcast to nearby devices' 
+                                      : '❌ Bluetooth SOS DISABLED'
+                                  ),
+                                  backgroundColor: value ? Colors.blue : Colors.red,
                                   duration: const Duration(seconds: 2),
                                 ),
                               );

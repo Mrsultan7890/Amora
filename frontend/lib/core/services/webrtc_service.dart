@@ -68,28 +68,48 @@ class WebRTCService {
       print('📹 Starting local stream...');
       
       final Map<String, dynamic> mediaConstraints = {
-        'audio': audio,
+        'audio': audio ? {
+          'mandatory': {},
+          'optional': [
+            {'googEchoCancellation': true},
+            {'googNoiseSuppression': true},
+            {'googAutoGainControl': true},
+          ],
+        } : false,
         'video': video ? {
           'mandatory': {
             'minWidth': '640',
             'minHeight': '480',
-            'minFrameRate': '30',
+            'minFrameRate': '15', // Reduced for stability
+            'maxFrameRate': '30',
           },
           'facingMode': 'user',
           'optional': [],
         } : false,
       };
       
-      _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+      // Add timeout to prevent hanging
+      _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw Exception('Camera/microphone access timeout'),
+          );
       
-      if (_peerConnection != null) {
+      if (_peerConnection != null && _localStream != null) {
         await _peerConnection!.addStream(_localStream!);
       }
       
-      print('✅ Local stream started');
+      print('✅ Local stream started successfully');
       return _localStream;
     } catch (e) {
       print('❌ Error starting local stream: $e');
+      
+      // Try audio-only fallback if video fails
+      if (video && audio) {
+        print('🔄 Trying audio-only fallback...');
+        return await startLocalStream(video: false, audio: true);
+      }
+      
       return null;
     }
   }

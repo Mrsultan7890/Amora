@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_emergency_service.dart';
 import '../../../../core/services/emergency_service.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/sms_service.dart';
 import '../../../../core/services/emergency_voice_service.dart';
+import '../../../../core/services/bluetooth_emergency_service.dart';
 import '../../../../shared/models/emergency_contact_model.dart';
 
 class EmergencyContactsPage extends StatefulWidget {
@@ -28,7 +30,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> with Tick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadContacts();
     _checkPermissions();
   }
@@ -353,6 +355,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> with Tick
                     tabs: const [
                       Tab(text: 'My Contacts'),
                       Tab(text: 'Voice Setup'),
+                      Tab(text: 'Bluetooth SOS'),
                     ],
                   ),
                 ),
@@ -365,6 +368,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> with Tick
                   children: [
                     _buildContactsTab(),
                     _buildVoiceSetupTab(),
+                    _buildBluetoothSOSTab(),
                   ],
                 ),
               ),
@@ -1147,6 +1151,306 @@ class _VoiceSetupContentState extends State<_VoiceSetupContent> {
               SizedBox(height: 4),
               Text(
                 '• Keep it short (10-30 seconds)\n• Speak clearly and calmly\n• Include your name and situation\n• Example: "This is John, I need help immediately"',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildBluetoothSOSTab() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: AmoraTheme.glassmorphism(color: Colors.white, borderRadius: 12),
+            child: const Column(
+              children: [
+                Icon(Icons.bluetooth, size: 48, color: Colors.blue),
+                SizedBox(height: 12),
+                Text(
+                  'Bluetooth Emergency SOS',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AmoraTheme.deepMidnight),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'When you shake your phone in emergency, it will broadcast SOS message to ALL nearby Bluetooth devices - even if they don\'t have this app!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Bluetooth Setup Content
+          Expanded(
+            child: _BluetoothSOSContent(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BluetoothSOSContent extends StatefulWidget {
+  @override
+  State<_BluetoothSOSContent> createState() => _BluetoothSOSContentState();
+}
+
+class _BluetoothSOSContentState extends State<_BluetoothSOSContent> {
+  final BluetoothEmergencyService _bluetoothService = BluetoothEmergencyService.instance;
+  bool _isBluetoothEnabled = false;
+  bool _isSOSEnabled = false;
+  bool _isListenerActive = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+    _checkBluetoothStatus();
+  }
+  
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isSOSEnabled = prefs.getBool('bluetooth_sos_enabled') ?? false;
+      _isListenerActive = prefs.getBool('bluetooth_listener_active') ?? false;
+    });
+    
+    if (_isListenerActive) {
+      await _bluetoothService.startEmergencyListener();
+    }
+  }
+  
+  Future<void> _checkBluetoothStatus() async {
+    final enabled = await _bluetoothService.isBluetoothEnabled();
+    setState(() {
+      _isBluetoothEnabled = enabled;
+    });
+  }
+  
+  Future<void> _toggleBluetoothSOS(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('bluetooth_sos_enabled', enabled);
+    
+    setState(() {
+      _isSOSEnabled = enabled;
+    });
+    
+    if (enabled && !_isBluetoothEnabled) {
+      await _bluetoothService.enableBluetooth();
+      await _checkBluetoothStatus();
+    }
+    
+    _showMessage(enabled ? 'Bluetooth SOS enabled' : 'Bluetooth SOS disabled');
+  }
+  
+  Future<void> _toggleListener(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('bluetooth_listener_active', enabled);
+    
+    setState(() {
+      _isListenerActive = enabled;
+    });
+    
+    if (enabled) {
+      if (!_isBluetoothEnabled) {
+        await _bluetoothService.enableBluetooth();
+        await _checkBluetoothStatus();
+      }
+      await _bluetoothService.startEmergencyListener();
+      _showMessage('Now listening for emergency broadcasts');
+    } else {
+      await _bluetoothService.stopEmergencyListener();
+      _showMessage('Stopped listening for emergencies');
+    }
+  }
+  
+  Future<void> _testBluetoothSOS() async {
+    if (!_isBluetoothEnabled) {
+      _showMessage('Please enable Bluetooth first');
+      return;
+    }
+    
+    await _bluetoothService.broadcastEmergency(
+      phoneNumber: '+91XXXXXXXXXX',
+      latitude: 19.4148171,
+      longitude: 72.8038184,
+      customMessage: 'TEST EMERGENCY - This is a test of Bluetooth SOS system',
+    );
+    
+    _showMessage('Test emergency broadcast sent to nearby devices!');
+  }
+  
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Bluetooth Status
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: AmoraTheme.glassmorphism(
+            color: _isBluetoothEnabled ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1), 
+            borderRadius: 12
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.bluetooth,
+                color: _isBluetoothEnabled ? Colors.green : Colors.red,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Bluetooth Status',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      _isBluetoothEnabled ? 'Enabled and ready' : 'Disabled - Tap to enable',
+                      style: TextStyle(
+                        color: _isBluetoothEnabled ? Colors.green : Colors.red,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!_isBluetoothEnabled)
+                ElevatedButton(
+                  onPressed: () async {
+                    await _bluetoothService.enableBluetooth();
+                    await _checkBluetoothStatus();
+                  },
+                  child: const Text('Enable'),
+                ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // SOS Broadcasting Toggle
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: AmoraTheme.glassmorphism(color: Colors.white, borderRadius: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.sos, color: Colors.red),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Emergency Broadcasting',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      _isSOSEnabled 
+                        ? 'Will broadcast SOS when you shake phone'
+                        : 'Disabled - Enable to broadcast emergencies',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _isSOSEnabled,
+                onChanged: _toggleBluetoothSOS,
+                activeColor: Colors.red,
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Emergency Listener Toggle
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: AmoraTheme.glassmorphism(color: Colors.white, borderRadius: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.hearing, color: Colors.blue),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Emergency Listener',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      _isListenerActive 
+                        ? 'Listening for emergency broadcasts from others'
+                        : 'Not listening - Enable to help others in emergency',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _isListenerActive,
+                onChanged: _toggleListener,
+                activeColor: Colors.blue,
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Test Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _testBluetoothSOS,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Text(
+              'Test Bluetooth SOS',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+        
+        const Spacer(),
+        
+        // Instructions
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: AmoraTheme.glassmorphism(color: Colors.blue.withOpacity(0.1), borderRadius: 12),
+          child: const Column(
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue),
+              SizedBox(height: 8),
+              Text(
+                'How Bluetooth SOS Works:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '• Shake phone in emergency → Broadcasts SOS to ALL nearby phones\n• Other phones get notification with your number & location\n• Works WITHOUT internet - pure Bluetooth\n• Receiver can call you or share your location\n• Keep listener ON to help others in emergency',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],

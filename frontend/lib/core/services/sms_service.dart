@@ -56,4 +56,24 @@ class SmsService {
       return false;
     }
   }
+  
+  static Future<bool> startBackgroundService() async {
+    try {
+      final result = await _channel.invokeMethod('startBackgroundService');
+      return result == true;
+    } catch (e) {
+      print('Failed to start background service: $e');
+      return false;
+    }
+  }
+  
+  static Future<bool> stopBackgroundService() async {
+    try {
+      final result = await _channel.invokeMethod('stopBackgroundService');
+      return result == true;
+    } catch (e) {
+      print('Failed to stop background service: $e');
+      return false;
+    }
+  }
 }

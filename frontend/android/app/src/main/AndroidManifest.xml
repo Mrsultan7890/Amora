@@ -20,6 +20,13 @@
     <uses-permission android:name="android.permission.CALL_PRIVILEGED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    
+    <!-- Bluetooth permissions -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     
     <!-- Features -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -60,6 +67,17 @@
                 <data android:scheme="amora" />
             </intent-filter>
         </activity>
+        
+        <!-- Emergency Background Service -->
+        <service
+            android:name=".EmergencyBackgroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Emergency shake detection for safety" />
+        </service>
         
         <!-- Firebase Messaging Service -->
         <service

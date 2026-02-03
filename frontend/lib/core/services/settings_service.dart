@@ -22,6 +22,7 @@ class SettingsService {
   static const String _incognitoModeKey = 'incognito_mode';
   static const String _showInFeedKey = 'show_in_feed';
   static const String _emergencyShakeEnabledKey = 'emergency_shake_enabled';
+  static const String _bluetoothSOSEnabledKey = 'bluetooth_sos_enabled';
   
   // Discovery Settings
   Future<double> getMaxDistance() async {
@@ -143,6 +144,18 @@ class SettingsService {
     await _updateUserSettings({'emergency_shake_enabled': enabled});
   }
   
+  // Bluetooth SOS Settings
+  Future<bool> getBluetoothSOSEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_bluetoothSOSEnabledKey) ?? false;
+  }
+  
+  Future<void> setBluetoothSOSEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_bluetoothSOSEnabledKey, enabled);
+    await _updateUserSettings({'bluetooth_sos_enabled': enabled});
+  }
+  
   // Feed Settings
   Future<bool> getShowInFeed() async {
     final prefs = await SharedPreferences.getInstance();
@@ -168,6 +181,7 @@ class SettingsService {
       'show_me_on_amora': await getShowMeOnAmora(),
       'incognito_mode': await getIncognitoMode(),
       'emergency_shake_enabled': await getEmergencyShakeEnabled(),
+      'bluetooth_sos_enabled': await getBluetoothSOSEnabled(),
       'show_in_feed': await getShowInFeed(),
     };
   }
