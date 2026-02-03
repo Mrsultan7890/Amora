@@ -145,12 +145,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Mark all as read when leaving page
-        await _notificationService.markAllAsRead();
-        Navigator.pop(context, true);
-        return false;
+    return PopScope(
+      onPopInvoked: (didPop) async {
+        if (didPop) {
+          // Mark all as read when leaving page
+          await _notificationService.markAllAsRead();
+        }
       },
       child: Scaffold(
       body: Container(

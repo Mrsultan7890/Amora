@@ -573,7 +573,7 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
                     
                     GestureDetector(
                       onTap: () async {
-                        final result = await Navigator.push(
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const NotificationsPage(),
