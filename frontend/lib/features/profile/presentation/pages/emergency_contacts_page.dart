@@ -947,6 +947,44 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> with Tick
       ),
     );
   }
+
+  Widget _buildBluetoothSOSTab() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: AmoraTheme.glassmorphism(color: Colors.white, borderRadius: 12),
+            child: const Column(
+              children: [
+                Icon(Icons.bluetooth, size: 48, color: Colors.blue),
+                SizedBox(height: 12),
+                Text(
+                  'Bluetooth Emergency SOS',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AmoraTheme.deepMidnight),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'When you shake your phone in emergency, it will broadcast SOS message to ALL nearby Bluetooth devices - even if they don\'t have this app!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Bluetooth Setup Content
+          Expanded(
+            child: _BluetoothSOSContent(),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _VoiceSetupContent extends StatefulWidget {
@@ -1159,44 +1197,7 @@ class _VoiceSetupContentState extends State<_VoiceSetupContent> {
       ],
     );
   }
-  
-  Widget _buildBluetoothSOSTab() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          // Info Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: AmoraTheme.glassmorphism(color: Colors.white, borderRadius: 12),
-            child: const Column(
-              children: [
-                Icon(Icons.bluetooth, size: 48, color: Colors.blue),
-                SizedBox(height: 12),
-                Text(
-                  'Bluetooth Emergency SOS',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AmoraTheme.deepMidnight),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'When you shake your phone in emergency, it will broadcast SOS message to ALL nearby Bluetooth devices - even if they don\'t have this app!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 20),
-          
-          // Bluetooth Setup Content
-          Expanded(
-            child: _BluetoothSOSContent(),
-          ),
-        ],
-      ),
-    );
-  }
+
 }
 
 class _BluetoothSOSContent extends StatefulWidget {

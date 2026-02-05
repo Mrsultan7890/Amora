@@ -52,14 +52,10 @@ class EmergencyService {
     
     if (enabled) {
       _startShakeDetection();
-      // Start background service for when app is closed
-      await SmsService.startBackgroundService();
-      print('🚨 EmergencyService: Shake detection STARTED + Background service STARTED');
+      print('🚨 EmergencyService: Shake detection STARTED');
     } else {
       _stopShakeDetection();
-      // Stop background service
-      await SmsService.stopBackgroundService();
-      print('🚨 EmergencyService: Shake detection STOPPED + Background service STOPPED');
+      print('🚨 EmergencyService: Shake detection STOPPED');
     }
   }
   
